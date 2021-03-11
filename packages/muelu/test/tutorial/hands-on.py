@@ -90,7 +90,7 @@ class ProblemHandler():
   def __init__(self):
     self.problem    = "Laplace2D"
     self.solver     = "cg"
-    self.executable = "MueLu_TutorialDriver.exe"
+    self.executable = "MueLu_Tutorial_laplace2d.exe"
     self.bcolors    = usecolors()
     self.meshx      = 50
     self.meshy      = 50
@@ -126,32 +126,32 @@ class ProblemHandler():
 
 
   def doLaplace2Dn(self):
-    self.problem    = "Laplace2D"
-    self.executable = "MueLu_TutorialDriver.exe"
+    self.problem    = "Laplace 2D"
+    self.executable = "MueLu_Tutorial_laplace2d.exe"
     self.solver     = "cg"
     self.meshx      = input("Mesh: Elements in x direction = ")
     self.meshy      = input("Mesh: Elements in y direction = ")
     self.runLaplaceProblem()
 
   def doLaplace2D50(self):
-    self.problem    = "Laplace2D"
-    self.executable = "MueLu_TutorialDriver.exe"
+    self.problem    = "Laplace 2D"
+    self.executable = "MueLu_Tutorial_laplace2d.exe"
     self.solver     = "cg"
     self.meshx      = 50
     self.meshy      = 50
     self.runLaplaceProblem()
 
   def doRecirc2Dn(self):
-    self.problem    = "Recirc2D"
-    self.executable = "MueLu_TutorialDriver.exe"
+    self.problem    = "Recirc 2D"
+    self.executable = "MueLu_Tutorial_recirc2d.exe"
     self.solver     = "gmres"
     self.meshx      = input("Mesh: Elements in x direction = ")
     self.meshy      = input("Mesh: Elements in y direction = ")
     self.runLaplaceProblem() # we can use the same routine as for Laplace...
 
   def doRecirc2D50(self):
-    self.problem    = "Recirc2D"
-    self.executable = "MueLu_TutorialDriver.exe"
+    self.problem    = "Recirc 2D"
+    self.executable = "MueLu_Tutorial_recirc2d.exe"
     self.solver     = "gmres"
     self.meshx      = 50
     self.meshy      = 50
@@ -217,7 +217,7 @@ class ProblemHandler():
     cmd = "rm *.vtp *.mat example*.txt output.log aggs*.txt nodes*.txt"
     runCommand(cmd)
     print("RUN EXAMPLE")
-    cmd = "mpirun -np " + str(self.numprocs) + " " + str(self.executable) + " --matrixType=" + str(self.problem) + " --nx=" + str(self.meshx) + " --ny=" + str(self.meshy) + " --mgridSweeps=" + str(self.mgsweeps) + " --xml=" + str(self.xmlFileName) + " | tee output.log 2>&1"
+    cmd = "mpirun -np " + str(self.numprocs) + " " + str(self.executable) + " --nx=" + str(self.meshx) + " --ny=" + str(self.meshy) + " --mgridSweeps=" + str(self.mgsweeps) + " --xml=" + str(self.xmlFileName) + " | tee output.log 2>&1"
     print(cmd)
     runCommand(cmd)
     runCommand("echo 'Press q to return.' >> output.log")
@@ -400,7 +400,7 @@ class ProblemHandler():
 
   def doExitProgram(self):
     print("CLEAN UP temporary data")
-    cmd = "rm *.vtp *.mat example*.txt output.log output.res aggs*.txt nodes*.txt"
+    cmd = "rm *.vtp *.mat example*.txt output.log aggs*.txt nodes*.txt"
     runCommand(cmd)
     print("QUIT")
     sys.exit()
@@ -443,17 +443,17 @@ class MueLu_XMLChallengeMode():
   def main(self):
 
     # check if tar.gz file with data is in subfolder challenges:
-#    if os.path.isfile("challenges/" + self.problem + ".tar.gz") == False:
-#      cmd = "rm -Rf challenges"
-#      runCommand(cmd)
-#      print("Download additional files")
-#      print(self.bcolors.WARNING+"https://trilinos.org/wordpress/wp-content/uploads/2015/07/MueLu_tutorial_challenges.tar.gz"+self.bcolors.ENDC)
-#      cmd = "wget --no-check-certificate https://trilinos.org/wordpress/wp-content/uploads/2015/07/MueLu_tutorial_challenges.tar.gz"
-#      runCommand(cmd)
-#      print("Extract files...")
-#      cmd = "tar xvf MueLu_tutorial_challenges.tar.gz"
-#      runCommand(cmd)
-#      print(self.bcolors.OKDARKGREEN + "Success!" + self.bcolors.ENDC)
+    if os.path.isfile("challenges/" + self.problem + ".tar.gz") == False:
+      cmd = "rm -Rf challenges"
+      runCommand(cmd)
+      print("Download additional files")
+      print(self.bcolors.WARNING+"https://trilinos.org/wordpress/wp-content/uploads/2015/07/MueLu_tutorial_challenges.tar.gz"+self.bcolors.ENDC)
+      cmd = "wget --no-check-certificate https://trilinos.org/wordpress/wp-content/uploads/2015/07/MueLu_tutorial_challenges.tar.gz"
+      runCommand(cmd)
+      print("Extract files...")
+      cmd = "tar xvf MueLu_tutorial_challenges.tar.gz"
+      runCommand(cmd)
+      print(self.bcolors.OKDARKGREEN + "Success!" + self.bcolors.ENDC)
 
     # generate results for reference xml files
     self.xmlReferenceFileName = "challenges/" + self.problem + "_reference.xml"
@@ -551,9 +551,7 @@ class MueLu_XMLChallengeMode():
     cmd = "rm -f *.vtp *.mat example*.txt output.log output.res aggs*.txt nodes*.txt"
     runCommand(cmd)
     print("RUN EXAMPLE")
-    #cmd = "mpirun -np " + str(self.numProcs) + " " + str(self.executable) + " --globalNumDofs=" + str(self.globalNumDofs) + " --nDofsPerNode=" + str(self.nDofsPerNode) + " --solver=" + str(self.solver) + " --tol=" + str(self.tol) + " --xml=" + self.xmlFileName + " --problem=challenges/" + str(self.problem) + " --coordinates=challenges/" + str(self.problem) + "_coords.txt" + " | tee output.log 2>&1"
-    cmd = "mpirun -np " + str(self.numProcs) + " " + str(self.executable) + " --matrixType=" + str(self.problem) + " --nx=" + str(self.meshx) + " --ny=" + str(self.meshy) + " --solver=" + str(self.solver) + " --tol=" + str(self.tol) + " --xml=" + self.xmlFileName + " | tee output.log 2>&1"
-    runCommand(cmd)
+    cmd = "mpirun -np " + str(self.numProcs) + " " + str(self.executable) + " --globalNumDofs=" + str(self.globalNumDofs) + " --nDofsPerNode=" + str(self.nDofsPerNode) + " --solver=" + str(self.solver) + " --tol=" + str(self.tol) + " --xml=" + self.xmlFileName + " --problem=challenges/" + str(self.problem) + " --coordinates=challenges/" + str(self.problem) + "_coords.txt" + " | tee output.log 2>&1"
     print(cmd)
     runCommand(cmd)
     runCommand("echo 'Press q to return.' >> output.log")
