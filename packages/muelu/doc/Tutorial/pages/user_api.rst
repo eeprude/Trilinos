@@ -35,9 +35,12 @@ Therefore, it is easy to use some utilities from the Teuchos package:
   :end-before: CommunicatorObject end
 
 For the multigrid method, we need a linear operator :math:`A`.
-We can generate a problem-dependent matrix operator using the Galeri package (see :ref:`quick_start/example problem`), with Tpetra as our underlying linear algebra framework (through Xpetra wrappers). Below is an example for the Laplace2D Problem:
+For demonstration purposes,
+here we just generate a 2D Laplacian operator using the Galeri package (see :ref:`quick_start/example problem`).
+In this example, we use Tpetra (throught the Xpetra wrappers) for the underlying linear algebra framework.
+For convenience, we ask the Galeri package to create a matrix of a Laplace2D problem:
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/laplace2d.cpp
   :language: cpp
   :start-after: 2DLaplacianOperator begin
   :end-before: 2DLaplacianOperator end
@@ -84,7 +87,7 @@ Then, we store the near null space vectors in the ``"user data"`` sublist of thi
 
 We then can create a MueLu object ready to be used as a preconditioner:
 
-.. literalinclude:: ../../../test/tutorial/TutorialDriver.cpp
+.. literalinclude:: ../../../test/tutorial/laplace2d.cpp
   :language: cpp
   :start-after: CreateTpetraPreconditioner begin
   :end-before: CreateTpetraPreconditioner end
@@ -212,7 +215,7 @@ the preconditioner is fully defined at compile time when using the ``C++`` inter
 First, a ``MueLu::Hierarchy`` object has to be defined, which manages the multigrid hierarchy including all multigrid levels.
 It provides routines for the multigrid setup and the multigrid cycle algorithms (such as V-cycle and W-cycle).
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: CreateNewHierarchy begin
   :end-before: CreateNewHierarchy end
@@ -220,7 +223,7 @@ It provides routines for the multigrid setup and the multigrid cycle algorithms 
 There are some member functions which can be used to describe the basic multigrid hierarchy.
 The ``SetMaxCoarseSize`` member function is used to set the maximum size of the coarse level problem before the coarsening process can be stopped.
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: InstantiateNewHierarchyObject begin
   :end-before: InstantiateNewHierarchyObject end
@@ -236,7 +239,7 @@ For a Laplace problem we can just use the constant ``nullspace`` vector that has
 Some routines need additional information.
 For example, the user has to provide the node coordinates for repartitioning.
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: CreateFineLevelObject begin
   :end-before: CreateFineLevelObject end
@@ -253,7 +256,7 @@ A ``MueLu::FactoryManager`` object is used for the internal management of data d
 Even though not absolutely necessary,
 we show the usage of the ``MueLu::FactoryManager`` object as it allows for user-specific enhancements of the multigrid code.
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: DefineFactoryManager begin
   :end-before: DefineFactoryManager end
@@ -262,14 +265,14 @@ The user can define its own factories for performing different tasks in the setu
 The following code shows how to define a smoothed aggregation transfer operator and a restriction operator.
 The ``MueLu::RAPFactory`` is used for the (standard) Galerkin product to generate the coarse level matrix :math:`A`.
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: DeclareSomeFactories begin
   :end-before: DeclareSomeFactories end
 
 The user-defined factories have to be registered in the ``FactoryManager`` using the lines
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: ConfigureFactoryManager begin
   :end-before: ConfigureFactoryManager end
@@ -289,7 +292,7 @@ Next, the user has to declare a level smoother.
 The following code can be used to define a symmetric Gauss-Seidel smoother.
 Other methods can be set up in a similar way.
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: DefineSmootherObject begin
   :end-before: DefineSmootherObject end
@@ -299,14 +302,14 @@ The ``SmootherFactory`` is used in the multigrid setup to generate level smoothe
 Note, that the ``SmootherFactory`` has also to be registered in the ``FactoryManager`` object.
 If the user forgets this, the multigrid setup will use some kind of default smoother, i.e., the user-chosen smoother options are just ignored.
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: CreateSmootherFactory begin
   :end-before: CreateSmootherFactory end
 
 Once the ``FactoryManager`` is set up, it can be used with the ``Hierarchy::Setup`` routine to initiate the coarsening process and set up the multigrid hierarchy.
 
-.. literalinclude:: ../../../test/tutorial/Tutorial_cppInterface.cpp
+.. literalinclude:: ../../../test/tutorial/ScalingTest.cpp
   :language: cpp
   :start-after: SetupMultigridHierarchy begin
   :end-before: SetupMultigridHierarchy end

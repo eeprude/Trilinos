@@ -7,11 +7,7 @@
 
   <Parameter name="multigrid algorithm" type="string" value="unsmoothed"/>
 
-<<<<<<<< HEAD:packages/muelu/test/tutorial/s1_easy_gaussseidel.xml
   <!-- Gauss-Seidel as pre-smoother with damping of 0.6 -->
-========
-  <!-- Jacobi as pre-smoother with damping of 0.6 -->
->>>>>>>> 70d33d28a16 (parent e04712d6a9536691561546735c54303f83318da9):packages/muelu/test/tutorial/s1_easy_jacobi2.xml
   <Parameter name="smoother: pre type" type="string" value="RELAXATION"/>
   <ParameterList name="smoother: pre params">
     <Parameter name="relaxation: type"  type="string" value="Symmetric Gauss-Seidel"/>
@@ -19,11 +15,7 @@
     <Parameter name="relaxation: damping factor" type="double" value="0.6"/>
   </ParameterList>
 
-<<<<<<<< HEAD:packages/muelu/test/tutorial/s1_easy_gaussseidel.xml
   <!-- Gauss-Seidel as pre-smoother with damping of 0.9 -->
-========
-  <!-- Jacobi as pre-smoother with damping of 0.9 -->
->>>>>>>> 70d33d28a16 (parent e04712d6a9536691561546735c54303f83318da9):packages/muelu/test/tutorial/s1_easy_jacobi2.xml
   <Parameter name="smoother: post type" type="string" value="RELAXATION"/>
   <ParameterList name="smoother: post params">
     <Parameter name="relaxation: type" type="string" value="Gauss-Seidel"/>
