@@ -30,8 +30,8 @@ template <class Scalar,
 class SolverMap_CrsMatrix : public StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 {
 public:
-using NewTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::NewTypeRef;
-using OriginalTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::OriginalTypeRef;
+using NewType = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::NewType;
+using OriginalType = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::OriginalType;
 
   ///
   /** Constructor
@@ -46,11 +46,11 @@ using OriginalTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, 
   ///
   /** Constructs fixed view of CrsMatrix as necessary.
    */
-  NewTypeRef operator()( OriginalTypeRef orig );
+  NewType operator()( const OriginalType & orig );
 
 private:
   template<typename int_type>
-  NewTypeRef construct( OriginalTypeRef orig );
+  NewType construct( OriginalType orig );
 
   // avoid virtual function hidden warning
   using StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::construct;

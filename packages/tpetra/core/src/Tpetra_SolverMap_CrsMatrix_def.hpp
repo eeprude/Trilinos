@@ -43,9 +43,9 @@ template <class Scalar,
           class Node>
 SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_CrsMatrix()
 {
-  if ((this->newObj_ != nullptr       ) &&
-      (this->newObj_ != this->origObj_)) {
-    delete this->newObj_;
+  if ((this->newObj_.get() != nullptr             ) &&
+      (this->newObj_.get() != this->origObj_.get())) {
+    this->newObj_.reset();
   }
 
   if (NewGraph_) {
@@ -62,10 +62,10 @@ template <class Scalar,
           class GlobalOrdinal,
           class Node>
 template<typename int_type>
-typename SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
-SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( OriginalTypeRef orig )
+typename SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
+SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( OriginalType orig )
 {
-  this->origObj_ = &orig;
+  this->origObj_ = orig;
 
   assert( !orig.IndicesAreGlobal() );
 #if 0 // AquiEEP
@@ -149,15 +149,15 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
     this->newObj_ = NewMatrix;
   }
 #endif
-  return *(this->newObj_);
+  return this->newObj_;
 }
 
 template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-typename SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
-SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalTypeRef orig )
+typename SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
+SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( const OriginalType & orig )
 {
 #if 0 // AquiEEP
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES
@@ -175,6 +175,15 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Orig
     throw "SolverMap_CrsMatrix::operator(): GlobalIndices type unknown";
 #endif
 }
+
+//
+// Explicit instantiation macro
+//
+// Must be expanded from within the Tpetra namespace!
+//
+
+#define TPETRA_SOLVERMAPCRSMATRIX_INSTANT(SCALAR,LO,GO,NODE) \
+  template class SolverMap_CrsMatrix< SCALAR , LO , GO , NODE >;
 
 } // namespace Tpetra
 

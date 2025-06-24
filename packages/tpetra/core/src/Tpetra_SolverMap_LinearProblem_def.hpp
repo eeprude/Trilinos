@@ -39,9 +39,9 @@ template <class Scalar,
           class Node>
 SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_LinearProblem()
 {
-  if ((this->newObj_ != nullptr       ) &&
-      (this->newObj_ != this->origObj_)) {
-    delete this->newObj_;
+  if ((this->newObj_.get() != nullptr             ) &&
+      (this->newObj_.get() != this->origObj_.get())) {
+    this->newObj_.reset();
   }
 }
 
@@ -49,25 +49,40 @@ template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-typename SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
+typename SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
 SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-operator()( typename SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::OriginalTypeRef orig )
+operator()( const OriginalType & orig )
 {
-  this->origObj_ = &orig;
+  this->origObj_ = orig;
 
-  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldMatrix = dynamic_cast< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>* >( orig.GetMatrix() );
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldRHS = orig.GetRHS();
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldLHS = orig.GetLHS();
+  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldMatrix = dynamic_cast< Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>* >(orig->getMatrix().get()); // AquiEEP: crsMatrix = rowMatrix ???
+  Teuchos::RCP< MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > OldRHS    = orig->getRHS();
+  Teuchos::RCP< MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > OldLHS    = orig->getLHS();
+  Teuchos::RCP< CrsMatrix  <Scalar, LocalOrdinal, GlobalOrdinal, Node> > NewMatrix = solverMapCrsMatrixTrans_( Teuchos::rcp< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(OldMatrix) );
 
-  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & NewMatrix = solverMapCrsMatrixTrans_( *OldMatrix );
-
-  if( &NewMatrix == OldMatrix ) //same matrix so use same problem
+  if (NewMatrix.get() == OldMatrix) {
+    // Same matrix, so use same problem
     this->newObj_ = this->origObj_;
-  else
-    this->newObj_ = new LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>( &NewMatrix, OldLHS, OldRHS );
-
-  return *(this->newObj_);
+  }
+  else {
+    this->newObj_ = Teuchos::rcp< LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(
+                      new LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>( NewMatrix
+                                                                                  , OldLHS
+                                                                                  , OldRHS
+                                                                                  ));
+  }
+  
+  return this->newObj_;
 }
+
+//
+// Explicit instantiation macro
+//
+// Must be expanded from within the Tpetra namespace!
+//
+
+#define TPETRA_SOLVERMAPLINEARPROBLEM_INSTANT(SCALAR,LO,GO,NODE) \
+  template class SolverMap_LinearProblem< SCALAR , LO , GO , NODE >;
 
 } // namespace Tpetra
 

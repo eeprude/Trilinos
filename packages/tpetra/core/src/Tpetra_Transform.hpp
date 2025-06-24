@@ -36,11 +36,9 @@ namespace Tpetra {
   
     using OriginalType      = Teuchos::RCP<T>;
     using OriginalConstType = Teuchos::RCP<const T>;
-    using OriginalTypeRef   = T&;
 
     using NewType           = Teuchos::RCP<U>;
     using NewConstType      = Teuchos::RCP<const U>;
-    using NewTypeRef        = U&;
   
     //@}
   

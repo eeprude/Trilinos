@@ -30,8 +30,8 @@ template <class Scalar,
 class SolverMap_LinearProblem : public StructuralSameTypeTransform< LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 {
 public:
-using NewTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::NewTypeRef;
-using OriginalTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::OriginalTypeRef;
+using NewType = typename StructuralSameTypeTransform< LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::NewType;
+using OriginalType = typename StructuralSameTypeTransform< LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::OriginalType;
 
   ///
   /** Constructor
@@ -46,7 +46,7 @@ using OriginalTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, 
   ///
   /** Constructs "fixed" Tpetra::LinearProblem
    */
-  NewTypeRef operator()( OriginalTypeRef orig );
+  NewType operator()( const OriginalType & orig );
 
 private:
   SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> solverMapCrsMatrixTrans_;
