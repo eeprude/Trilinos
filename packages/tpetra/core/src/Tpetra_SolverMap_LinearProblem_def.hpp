@@ -55,7 +55,7 @@ operator()( const OriginalType & orig )
 {
   this->origObj_ = orig;
 
-  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldMatrix = dynamic_cast< Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>* >(orig->getMatrix().get()); // AquiEEP: crsMatrix = rowMatrix ???
+  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldMatrix = dynamic_cast< Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>* >(orig->getMatrix().get());
   Teuchos::RCP< MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > OldRHS    = orig->getRHS();
   Teuchos::RCP< MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > OldLHS    = orig->getLHS();
   Teuchos::RCP< CrsMatrix  <Scalar, LocalOrdinal, GlobalOrdinal, Node> > NewMatrix = solverMapCrsMatrixTrans_( Teuchos::rcp< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(OldMatrix) );
