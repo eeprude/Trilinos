@@ -60,7 +60,7 @@ operator()( typename LinearProblem_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldRHS = orig.GetRHS();
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldLHS = orig.GetLHS();
 
-  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & NewMatrix = nullptr; // crsMatrixSolverMapTrans_( *OldMatrix ); // AquiEEP
+  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & NewMatrix = crsMatrixSolverMapTrans_( *OldMatrix );
 
   if( &NewMatrix == OldMatrix ) //same matrix so use same problem
     newObj_ = origObj_;
@@ -73,5 +73,3 @@ operator()( typename LinearProblem_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal
 } //namespace Tpetra
 
 #endif // TPETRA_SOLVERMAP_LINEARPROBLEM_DEF_HPP
-
-

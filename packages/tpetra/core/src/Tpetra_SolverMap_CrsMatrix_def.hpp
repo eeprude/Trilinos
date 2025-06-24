@@ -1,72 +1,74 @@
-//@HEADER
-// ***********************************************************************
+// @HEADER
+// *****************************************************************************
+//          Tpetra: Templated Linear Algebra Services Package
 //
-//     EpetraExt: Epetra Extended - Linear Algebra Services Package
-//                 Copyright (2011) Sandia Corporation
-//
-// Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
-// the U.S. Government retains certain rights in this software.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// 1. Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-// notice, this list of conditions and the following disclaimer in the
-// documentation and/or other materials provided with the distribution.
-//
-// 3. Neither the name of the Corporation nor the names of the
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY SANDIA CORPORATION "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL SANDIA CORPORATION OR THE
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// Questions? Contact Michael A. Heroux (maherou@sandia.gov)
-//
-// ***********************************************************************
-//@HEADER
+// Copyright 2008 NTESS and the Tpetra contributors.
+// SPDX-License-Identifier: BSD-3-Clause
+// *****************************************************************************
+// @HEADER
 
-#include <EpetraExt_SolverMap_CrsMatrix.h>
+#ifndef TPETRA_SOLVERMAP_CRSMATRIX_DEF_HPP
+#define TPETRA_SOLVERMAP_CRSMATRIX_DEF_HPP
 
-#include <Epetra_CrsGraph.h>
-#include <Epetra_CrsMatrix.h>
-#include <Epetra_Map.h>
-#include <Epetra_Comm.h>
+/// \file Tpetra_SolverMap_CrsMatrix_def.hpp
+/// \brief Definition of the Tpetra::CrsMatrix_SolverMap class
+///
+/// If you want to use Tpetra::CrsMatrix_SolverMap, include
+/// "Tpetra_SolverMap_CrsMatrix.hpp", a file which CMake generates
+/// and installs for you).
+///
+/// If you only want the declaration of Tpetra::CrsMatrix_SolverMap,
+/// include "Tpetra_SolverMap_CrsMatrix_decl.hpp".
+
+#include <Tpetra_LinearProblem.h>
 
 #include <vector>
 
-namespace EpetraExt {
+namespace Tpetra {
 
-CrsMatrix_SolverMap::
-~CrsMatrix_SolverMap()
+template <class Scalar,
+          class LocalOrdinal,
+          class GlobalOrdinal,
+          class Node>
+CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CrsMatrix_SolverMap()
+  : NewColMap_(nullptr)
+  , NewGraph_ (nullptr)
 {
-  if( newObj_ && newObj_ != origObj_ ) delete newObj_;
-  if( NewGraph_ ) delete NewGraph_;
-  if( NewColMap_ ) delete NewColMap_;
+  // Nothing to do
 }
 
-  template<typename int_type>
-CrsMatrix_SolverMap::NewTypeRef
-CrsMatrix_SolverMap::
-construct( OriginalTypeRef orig )
+template <class Scalar,
+          class LocalOrdinal,
+          class GlobalOrdinal,
+          class Node>
+CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~CrsMatrix_SolverMap()
+{
+  if ((newObj_ != nullptr ) &&
+      (newObj_ != origObj_)) {
+    delete newObj_;
+  }
+
+  if (NewGraph_) {
+    delete NewGraph_;
+  }
+  
+  if (NewColMap_) {
+    delete NewColMap_;
+  }
+}
+
+template <class Scalar,
+          class LocalOrdinal,
+          class GlobalOrdinal,
+          class Node>
+template<typename int_type>
+CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
+CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( OriginalTypeRef orig )
 {
   origObj_ = &orig;
 
   assert( !orig.IndicesAreGlobal() );
-
+#if 0 // AquiEEP
   //test if matrix has missing local columns in its col std::map
   const Epetra_Map & RowMap = orig.RowMap();
   const Epetra_Map & DomainMap = orig.DomainMap();
@@ -146,14 +148,18 @@ construct( OriginalTypeRef orig )
 
     newObj_ = NewMatrix;
   }
-
+#endif
   return *newObj_;
 }
 
-CrsMatrix_SolverMap::NewTypeRef
-CrsMatrix_SolverMap::
-operator()( OriginalTypeRef orig )
+template <class Scalar,
+          class LocalOrdinal,
+          class GlobalOrdinal,
+          class Node>
+CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
+CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalTypeRef orig )
 {
+#if 0 // AquiEEP
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES
   if(orig.RowMap().GlobalIndicesInt()) {
     return construct<int>(orig);
@@ -167,6 +173,8 @@ operator()( OriginalTypeRef orig )
   else
 #endif
     throw "CrsMatrix_SolverMap::operator(): GlobalIndices type unknown";
+#endif
 }
-} // namespace EpetraExt
+} // namespace Tpetra
 
+#endif // TPETRA_SOLVERMAP_CRSMATRIX_DEF_HPP

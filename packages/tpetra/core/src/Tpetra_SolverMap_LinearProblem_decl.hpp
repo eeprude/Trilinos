@@ -15,7 +15,7 @@
 
 #include <Tpetra_Transform.h>
 
-//#include <Tpetra_SolverMap_CrsMatrix.h> // AquiEEP
+#include <Tpetra_SolverMap_CrsMatrix.h>
 
 namespace Tpetra {
 
@@ -29,10 +29,7 @@ template <class Scalar,
           class Node>
 class LinearProblem_SolverMap : public StructuralSameTypeTransform< LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 {
-  //CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node> crsMatrixSolverMapTrans_; // AquiEEP
-
 public:
-
   ///
   /** Constructor
    */
@@ -47,6 +44,9 @@ public:
   /** Constructs "fixed" Tpetra::LinearProblem
    */
   NewTypeRef operator()( OriginalTypeRef orig );
+
+private:
+  CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node> crsMatrixSolverMapTrans_;
 };
 
 } //namespace Tpetra
