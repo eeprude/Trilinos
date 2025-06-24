@@ -11,10 +11,10 @@
 #define TPETRA_SOLVERMAP_CRSMATRIX_DECL_HPP
 
 /// \file Tpetra_SolverMap_CrsMatrix_decl.hpp
-/// \brief Declaration of the Tpetra::CrsMatrix_SolverMap class
+/// \brief Declaration of the Tpetra::SolverMap_CrsMatrix class
 
-#include <Tpetra_Transform.h>
-#include <Tpetra_CrsMatrix.h>
+#include <Tpetra_Transform.hpp>
+#include <Tpetra_CrsMatrix.hpp>
 
 namespace Tpetra {
 
@@ -27,18 +27,21 @@ template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-class CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node> : public StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+class SolverMap_CrsMatrix : public StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 {
 public:
+using NewTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::NewTypeRef;
+using OriginalTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::OriginalTypeRef;
+
   ///
   /** Constructor
    */
-  CrsMatrix_SolverMap();
+  SolverMap_CrsMatrix();
 
   ///
   /** Destructor
    */
-  ~CrsMatrix_SolverMap();
+  ~SolverMap_CrsMatrix();
 
   ///
   /** Constructs fixed view of CrsMatrix as necessary.

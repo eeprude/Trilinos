@@ -11,17 +11,16 @@
 #define TPETRA_SOLVERMAP_LINEARPROBLEM_DEF_HPP
 
 /// \file Tpetra_SolverMap_LinearProblem_def.hpp
-/// \brief Definition of the Tpetra::LinearProblem_SolverMap class
+/// \brief Definition of the Tpetra::SolverMap_LinearProblem class
 ///
-/// If you want to use Tpetra::LinearProblem_SolverMap, include
+/// If you want to use Tpetra::SolverMap_LinearProblem, include
 /// "Tpetra_SolverMap_LinearProblem.hpp", a file which CMake generates
 /// and installs for you).
 ///
-/// If you only want the declaration of Tpetra::LinearProblem_SolverMap,
+/// If you only want the declaration of Tpetra::SolverMap_LinearProblem,
 /// include "Tpetra_SolverMap_LinearProblem_decl.hpp".
 
-#include <Tpetra_LinearProblem.h>
-#include <Tpetra_CrsMatrix.h>
+#include <Tpetra_SolverMap_LinearProblem_decl.hpp>
 
 namespace Tpetra {
 
@@ -29,7 +28,7 @@ template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-LinearProblem_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::LinearProblem_SolverMap()
+SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SolverMap_LinearProblem()
 {
   // Nothing to do
 }
@@ -38,11 +37,11 @@ template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-LinearProblem_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~LinearProblem_SolverMap()
+SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_LinearProblem()
 {
-  if ((newObj_ != nullptr ) &&
-      (newObj_ != origObj_)) {
-    delete newObj_;
+  if ((this->newObj_ != nullptr       ) &&
+      (this->newObj_ != this->origObj_)) {
+    delete this->newObj_;
   }
 }
 
@@ -50,26 +49,26 @@ template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-typename LinearProblem_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
-LinearProblem_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-operator()( typename LinearProblem_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::OriginalTypeRef orig )
+typename SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
+SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+operator()( typename SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::OriginalTypeRef orig )
 {
-  origObj_ = &orig;
+  this->origObj_ = &orig;
 
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldMatrix = dynamic_cast< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>* >( orig.GetMatrix() );
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldRHS = orig.GetRHS();
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldLHS = orig.GetLHS();
 
-  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & NewMatrix = crsMatrixSolverMapTrans_( *OldMatrix );
+  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & NewMatrix = solverMapCrsMatrixTrans_( *OldMatrix );
 
   if( &NewMatrix == OldMatrix ) //same matrix so use same problem
-    newObj_ = origObj_;
+    this->newObj_ = this->origObj_;
   else
-    newObj_ = new LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>( &NewMatrix, OldLHS, OldRHS );
+    this->newObj_ = new LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>( &NewMatrix, OldLHS, OldRHS );
 
-  return *newObj_;
+  return *(this->newObj_);
 }
 
-} //namespace Tpetra
+} // namespace Tpetra
 
 #endif // TPETRA_SOLVERMAP_LINEARPROBLEM_DEF_HPP

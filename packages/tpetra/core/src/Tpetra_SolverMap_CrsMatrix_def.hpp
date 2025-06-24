@@ -11,16 +11,16 @@
 #define TPETRA_SOLVERMAP_CRSMATRIX_DEF_HPP
 
 /// \file Tpetra_SolverMap_CrsMatrix_def.hpp
-/// \brief Definition of the Tpetra::CrsMatrix_SolverMap class
+/// \brief Definition of the Tpetra::SolverMap_CrsMatrix class
 ///
-/// If you want to use Tpetra::CrsMatrix_SolverMap, include
+/// If you want to use Tpetra::SolverMap_CrsMatrix, include
 /// "Tpetra_SolverMap_CrsMatrix.hpp", a file which CMake generates
 /// and installs for you).
 ///
-/// If you only want the declaration of Tpetra::CrsMatrix_SolverMap,
+/// If you only want the declaration of Tpetra::SolverMap_CrsMatrix,
 /// include "Tpetra_SolverMap_CrsMatrix_decl.hpp".
 
-#include <Tpetra_LinearProblem.h>
+#include <Tpetra_SolverMap_CrsMatrix_decl.hpp>
 
 #include <vector>
 
@@ -30,7 +30,7 @@ template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CrsMatrix_SolverMap()
+SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SolverMap_CrsMatrix()
   : NewColMap_(nullptr)
   , NewGraph_ (nullptr)
 {
@@ -41,19 +41,19 @@ template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~CrsMatrix_SolverMap()
+SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_CrsMatrix()
 {
-  if ((newObj_ != nullptr ) &&
-      (newObj_ != origObj_)) {
-    delete newObj_;
+  if ((this->newObj_ != nullptr       ) &&
+      (this->newObj_ != this->origObj_)) {
+    delete this->newObj_;
   }
 
   if (NewGraph_) {
-    delete NewGraph_;
+    delete this->NewGraph_;
   }
   
   if (NewColMap_) {
-    delete NewColMap_;
+    delete this->NewColMap_;
   }
 }
 
@@ -62,10 +62,10 @@ template <class Scalar,
           class GlobalOrdinal,
           class Node>
 template<typename int_type>
-CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
-CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( OriginalTypeRef orig )
+typename SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
+SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( OriginalTypeRef orig )
 {
-  origObj_ = &orig;
+  this->origObj_ = &orig;
 
   assert( !orig.IndicesAreGlobal() );
 #if 0 // AquiEEP
@@ -89,7 +89,7 @@ CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
 
   if( !MatchAll )
   {
-    newObj_ = origObj_;
+    this->newObj_ = this->origObj_;
   }
   else
   {
@@ -146,18 +146,18 @@ CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
 
     NewMatrix->FillComplete(DomainMap,RangeMap);
 
-    newObj_ = NewMatrix;
+    this->newObj_ = NewMatrix;
   }
 #endif
-  return *newObj_;
+  return *(this->newObj_);
 }
 
 template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
-CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalTypeRef orig )
+typename SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewTypeRef
+SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalTypeRef orig )
 {
 #if 0 // AquiEEP
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES
@@ -172,9 +172,10 @@ CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Orig
   }
   else
 #endif
-    throw "CrsMatrix_SolverMap::operator(): GlobalIndices type unknown";
+    throw "SolverMap_CrsMatrix::operator(): GlobalIndices type unknown";
 #endif
 }
+
 } // namespace Tpetra
 
 #endif // TPETRA_SOLVERMAP_CRSMATRIX_DEF_HPP

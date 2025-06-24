@@ -11,11 +11,11 @@
 #define TPETRA_SOLVERMAP_LINEARPROBLEM_DECL_HPP
 
 /// \file Tpetra_SolverMap_LinearProblem_decl.hpp
-/// \brief Declaration of the Tpetra::LinearProblem_SolverMap class
+/// \brief Declaration of the Tpetra::SolverMap_LinearProblem class
 
-#include <Tpetra_Transform.h>
-
-#include <Tpetra_SolverMap_CrsMatrix.h>
+#include <Tpetra_Transform.hpp>
+#include <Tpetra_LinearProblem.hpp>
+#include <Tpetra_SolverMap_CrsMatrix.hpp>
 
 namespace Tpetra {
 
@@ -27,18 +27,21 @@ template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
           class Node>
-class LinearProblem_SolverMap : public StructuralSameTypeTransform< LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+class SolverMap_LinearProblem : public StructuralSameTypeTransform< LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 {
 public:
+using NewTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::NewTypeRef;
+using OriginalTypeRef = typename StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::OriginalTypeRef;
+
   ///
   /** Constructor
    */
-  LinearProblem_SolverMap();
+  SolverMap_LinearProblem();
 
   ///
   /** Destructor
    */
-  ~LinearProblem_SolverMap();
+  ~SolverMap_LinearProblem();
 
   ///
   /** Constructs "fixed" Tpetra::LinearProblem
@@ -46,9 +49,9 @@ public:
   NewTypeRef operator()( OriginalTypeRef orig );
 
 private:
-  CrsMatrix_SolverMap<Scalar, LocalOrdinal, GlobalOrdinal, Node> crsMatrixSolverMapTrans_;
+  SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> solverMapCrsMatrixTrans_;
 };
 
-} //namespace Tpetra
+} // namespace Tpetra
 
 #endif // TPETRA_SOLVERMAP_LINEARPROBLEM_DECL_HPP
