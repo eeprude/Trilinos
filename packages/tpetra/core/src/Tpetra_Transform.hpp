@@ -42,7 +42,11 @@ namespace Tpetra {
     //@}
   
     ///
-    virtual ~Transform() = default;
+    virtual ~Transform() //= default; // AquiEEP
+    {
+      std::cout << "Passing through Transform<>::destructor()"
+		<< std::endl;
+    }
   
     /** @name Pure Virtual Methods which must be implemented by subclasses */
     //@{
@@ -159,7 +163,11 @@ namespace Tpetra {
     void fwd() { return; }
     void rvs() { return; }
   
-    virtual ~StructuralTransform() = default;
+    virtual ~StructuralTransform() //= default; // AquiEEP
+    {
+      std::cout << "Passing through StructuralTransform<>::destructor()"
+		<< std::endl;
+    }
   };
   
   template<typename T>
@@ -168,17 +176,25 @@ namespace Tpetra {
    public:
     using TransformType = Teuchos::RCP<T>;
   
-    virtual ~SameTypeTransform() = default;
+    virtual ~SameTypeTransform() //= default; // AquiEEP
+    {
+      std::cout << "Passing through SameTypeTransform<>::destructor()"
+		<< std::endl;
+    }
   };
   
   template<typename T>
   class StructuralSameTypeTransform : public SameTypeTransform<T>
   {
    public:
-    void fwd() { return; }
-    void rvs() { return; }
+    void fwd() { std::cout << "EEP at StructuralSameTypeTranform::fwd(): passing through" << std::endl; return; }
+    void rvs() { std::cout << "EEP at StructuralSameTypeTranform::rvs(): passing through" << std::endl; return; }
   
-    virtual ~StructuralSameTypeTransform() = default;
+    virtual ~StructuralSameTypeTransform() //= default; // AquiEEP
+    {
+      std::cout << "Passing through StructuralSameTypeTransform<>::destructor()"
+		<< std::endl;
+    }
   };
   
 //  template<typename T>
@@ -203,7 +219,11 @@ namespace Tpetra {
     void fwd() { return; }
     void rvs() { return; }
   
-    virtual ~ViewTransform() = default;
+    virtual ~ViewTransform() //= default; // AquiEEP
+    {
+      std::cout << "Passing through ViewTransform<>::destructor()"
+		<< std::endl;
+    }
   };
 
 } //namespace Tpetra

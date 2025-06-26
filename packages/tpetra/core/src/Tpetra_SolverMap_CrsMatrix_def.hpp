@@ -43,18 +43,23 @@ template <class Scalar,
           class Node>
 SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_CrsMatrix()
 {
+  std::cout << "EEP at solvermap_cm_transform<>::destructor(): entering" << std::endl;
   if ((this->newObj_.get() != nullptr             ) &&
       (this->newObj_.get() != this->origObj_.get())) {
+    std::cout << "EEP at solvermap_cm_transform<>::destructor(): calling newObj_.reset()" << std::endl;
     this->newObj_.reset();
   }
 
   if (NewGraph_) {
+    std::cout << "EEP at solvermap_cm_transform<>::destructor(): calling NewGraph_.reset()" << std::endl;
     delete this->NewGraph_;
   }
   
   if (NewColMap_) {
+    std::cout << "EEP at solvermap_cm_transform<>::destructor(): calling NewColMap_.reset()" << std::endl;
     delete this->NewColMap_;
   }
+  std::cout << "EEP at solvermap_cm_transform<>::destructor(): leaving" << std::endl;
 }
 
 template <class Scalar,
@@ -68,7 +73,9 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
   this->origObj_ = orig;
 
   assert( !orig.IndicesAreGlobal() );
-#if 0 // AquiEEP
+#if 1 // AquiEEP
+  this->newObj_ = this->origObj_;
+#else
   //test if matrix has missing local columns in its col std::map
   const Epetra_Map & RowMap = orig.RowMap();
   const Epetra_Map & DomainMap = orig.DomainMap();
@@ -159,21 +166,7 @@ template <class Scalar,
 typename SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
 SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( const OriginalType & orig )
 {
-#if 0 // AquiEEP
-#ifndef EPETRA_NO_32BIT_GLOBAL_INDICES
-  if(orig.RowMap().GlobalIndicesInt()) {
-    return construct<int>(orig);
-  }
-  else
-#endif
-#ifndef EPETRA_NO_64BIT_GLOBAL_INDICES
-  if(orig.RowMap().GlobalIndicesLongLong()) {
-    return construct<long long>(orig);
-  }
-  else
-#endif
-    throw "SolverMap_CrsMatrix::operator(): GlobalIndices type unknown";
-#endif
+  return construct<GlobalOrdinal>(orig); // AquiEEP
 }
 
 //

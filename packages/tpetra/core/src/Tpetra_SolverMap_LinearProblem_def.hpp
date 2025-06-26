@@ -39,10 +39,13 @@ template <class Scalar,
           class Node>
 SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_LinearProblem()
 {
+  std::cout << "EEP at solvermap_lp_transform<>::destructor(): entering" << std::endl;
   if ((this->newObj_.get() != nullptr             ) &&
       (this->newObj_.get() != this->origObj_.get())) {
+    std::cout << "EEP at solvermap_lp_transform<>::destructor(): calling newObj_.reset()" << std::endl;
     this->newObj_.reset();
   }
+  std::cout << "EEP at solvermap_lp_transform<>::destructor(): leaving" << std::endl;
 }
 
 template <class Scalar,
@@ -53,25 +56,32 @@ typename SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::New
 SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 operator()( const OriginalType & orig )
 {
+  using mv_t = MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+  using cm_t = CrsMatrix  <Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+  using lp_t = LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+
+  std::cout << "EEP at solverMap_lp_transform::operator(): entering" << std::endl;
+
   this->origObj_ = orig;
 
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> * OldMatrix = dynamic_cast< Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>* >(orig->getMatrix().get());
-  Teuchos::RCP< MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > OldRHS    = orig->getRHS();
-  Teuchos::RCP< MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > OldLHS    = orig->getLHS();
-  Teuchos::RCP< CrsMatrix  <Scalar, LocalOrdinal, GlobalOrdinal, Node> > NewMatrix = solverMapCrsMatrixTrans_( Teuchos::rcp< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(OldMatrix) );
+  Teuchos::RCP< mv_t > OldRHS    = orig->getRHS();
+  Teuchos::RCP< mv_t > OldLHS    = orig->getLHS();
+  std::cout << "EEP at solverMap_lp_transform::operator(): calling solverMapCrsMatrixTrans_()" << std::endl;
+  Teuchos::RCP< cm_t > NewMatrix = solverMapCrsMatrixTrans_( Teuchos::rcp< cm_t >(OldMatrix) );
+  std::cout << "EEP at solverMap_lp_transform::operator(): returned from solverMapCrsMatrixTrans_()" << std::endl;
 
-  if (NewMatrix.get() == OldMatrix) {
+  if (false) { // (NewMatrix.get() == OldMatrix) {
     // Same matrix, so use same problem
+    std::cout << "EEP at solverMap_lp_transform::operator(): simple =" << std::endl;
     this->newObj_ = this->origObj_;
   }
   else {
-    this->newObj_ = Teuchos::rcp< LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(
-                      new LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>( NewMatrix
-                                                                                  , OldLHS
-                                                                                  , OldRHS
-                                                                                  ));
+    std::cout << "EEP at solverMap_lp_transform::operator(): new lp_t" << std::endl;
+    this->newObj_ = Teuchos::rcp< lp_t >( new lp_t(NewMatrix, OldLHS, OldRHS) );
   }
   
+  std::cout << "EEP at solverMap_lp_transform::operator(): leaving" << std::endl;
   return this->newObj_;
 }
 

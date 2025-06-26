@@ -88,7 +88,14 @@ namespace Tpetra {
                              GlobalOrdinal, Node>& Problem);
 
     //! LinearProblem Destructor.
-    virtual ~LinearProblem() = default;
+    virtual ~LinearProblem() // = default; // AquiEEP
+    {
+      std::cout << "Passing through LinearProblem<>::destructor()"
+	        << ": A_.get() = " << A_.get()
+	        << ", X_.get() = " << X_.get()
+	        << ", B_.get() = " << B_.get()
+		<< std::endl;
+    }
 
     //@}
 
