@@ -56,8 +56,8 @@ typename SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::New
 SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 operator()( const OriginalType & orig )
 {
-  using mv_t = MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
-  using cm_t = CrsMatrix  <Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+  using mv_t = MultiVector  <Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+  using cm_t = CrsMatrix    <Scalar, LocalOrdinal, GlobalOrdinal, Node>;
   using lp_t = LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
 
   std::cout << "EEP at solverMap_lp_transform::operator(): entering" << std::endl;
@@ -71,7 +71,7 @@ operator()( const OriginalType & orig )
   Teuchos::RCP< cm_t > NewMatrix = solverMapCrsMatrixTrans_( Teuchos::rcp< cm_t >(OldMatrix) );
   std::cout << "EEP at solverMap_lp_transform::operator(): returned from solverMapCrsMatrixTrans_()" << std::endl;
 
-  if (false) { // (NewMatrix.get() == OldMatrix) {
+  if (false) { // (NewMatrix.get() == OldMatrix) { // AquiEEP
     // Same matrix, so use same problem
     std::cout << "EEP at solverMap_lp_transform::operator(): simple =" << std::endl;
     this->newObj_ = this->origObj_;

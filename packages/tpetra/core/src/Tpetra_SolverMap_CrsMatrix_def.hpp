@@ -31,8 +31,8 @@ template <class Scalar,
           class GlobalOrdinal,
           class Node>
 SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SolverMap_CrsMatrix()
-  : NewColMap_(nullptr)
-  , NewGraph_ (nullptr)
+//: NewColMap_(nullptr)
+  : NewGraph_ (nullptr)
 {
   // Nothing to do
 }
@@ -55,10 +55,10 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_CrsMa
     delete this->NewGraph_;
   }
   
-  if (NewColMap_) {
-    std::cout << "EEP at solvermap_cm_transform<>::destructor(): calling NewColMap_.reset()" << std::endl;
-    delete this->NewColMap_;
-  }
+  //if (NewColMap_) {
+  //  std::cout << "EEP at solvermap_cm_transform<>::destructor(): calling NewColMap_.reset()" << std::endl;
+  //  delete this->NewColMap_;
+  //}
   std::cout << "EEP at solvermap_cm_transform<>::destructor(): leaving" << std::endl;
 }
 
@@ -70,79 +70,90 @@ template<typename int_type>
 typename SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
 SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( OriginalType orig )
 {
+  using map_t = Map<LocalOrdinal, GlobalOrdinal, Node>;
+  using cg_t = CrsGraph<LocalOrdinal, GlobalOrdinal, Node>;
+
   this->origObj_ = orig;
 
   assert( !orig.IndicesAreGlobal() );
-#if 1 // AquiEEP
+#if 0 // AquiEEP
   this->newObj_ = this->origObj_;
 #else
   //test if matrix has missing local columns in its col std::map
-  const Epetra_Map & RowMap = orig.RowMap();
-  const Epetra_Map & DomainMap = orig.DomainMap();
-  const Epetra_Map & ColMap = orig.ColMap();
-  const Epetra_Comm & Comm = RowMap.Comm();
-  int NumMyRows = RowMap.NumMyElements();
-  int NumCols = DomainMap.NumMyElements();
-  int Match = 0;
-  for( int i = 0; i < NumCols; ++i )
-    if( DomainMap.GID64(i) != ColMap.GID64(i) )
-    {
-      Match = 1;
+  Teuchos::RCP<const map_t> RowMap    = orig->getRowMap();
+  Teuchos::RCP<const map_t> DomainMap = orig->getDomainMap();
+  Teuchos::RCP<const map_t> ColMap    = orig->getColMap();
+
+  Teuchos::RCP<const Teuchos::Comm<int>> Comm = RowMap->getComm();
+  int localNumRows = RowMap->getLocalNumElements();
+  size_t domain_localNumCols = DomainMap->getLocalNumElements();
+
+  size_t localNumDifferences = 0;
+  for (size_t i(0); i < domain_localNumCols; ++i) {
+    if (DomainMap->getGlobalElement(i) != ColMap->getGlobalElement(i)) {
+      localNumDifferences = 1;
       break;
     }
+  }
 
-  int MatchAll = 0;
-  Comm.SumAll( &Match, &MatchAll, 1 );
-
-  if( !MatchAll )
-  {
+  size_t globalNumDifferences = 0;
+  Teuchos::reduceAll(*Comm, Teuchos::REDUCE_SUM, 1, &localNumDifferences, &globalNumDifferences);
+  
+  if (globalNumDifferences == 0) {
     this->newObj_ = this->origObj_;
   }
-  else
-  {
-    //create ColMap with all local rows included
-    std::vector<int_type> Cols(NumCols);
-    //fill Cols list with GIDs of all local columns 
-    for( int i = 0; i < NumCols; ++i )
-      Cols[i] = (int_type) DomainMap.GID64(i);
+  else {
+    // Create ColMap with all local rows included
+    std::vector<GlobalOrdinal> Cols(domain_localNumCols);
 
-    //now append to Cols any ghost column entries
-    int NumMyCols = ColMap.NumMyElements();
-    for( int i = 0; i < NumMyCols; ++i )
-      if( !DomainMap.MyGID( ColMap.GID64(i) ) ) Cols.push_back( (int_type) ColMap.GID64(i) );
-    
-    int NewNumMyCols = Cols.size();
-    int NewNumGlobalCols;
-    Comm.SumAll( &NewNumMyCols, &NewNumGlobalCols, 1 );
-    //create new column std::map
-    NewColMap_ = new Epetra_Map( NewNumGlobalCols, NewNumMyCols,&Cols[0], DomainMap.IndexBase64(), Comm );
-
-    //New Graph
-    std::vector<int> NumIndicesPerRow( NumMyRows );
-    for( int i = 0; i < NumMyRows; ++i )
-      NumIndicesPerRow[i] = orig.NumMyEntries(i);
-    NewGraph_ = new Epetra_CrsGraph( Copy, RowMap, *NewColMap_, &NumIndicesPerRow[0] );
-
-    int MaxNumEntries = orig.MaxNumEntries();
-    int NumEntries;
-    std::vector<int_type> Indices( MaxNumEntries );
-    for( int i = 0; i < NumMyRows; ++i )
-    {
-      int_type RowGID = (int_type) RowMap.GID64(i);
-      orig.Graph().ExtractGlobalRowCopy( RowGID, MaxNumEntries, NumEntries, &Indices[0] );
-      NewGraph_->InsertGlobalIndices( RowGID, NumEntries, &Indices[0] );
+    // Fill Cols list with GIDs of all local columns 
+    for (size_t i(0); i < domain_localNumCols; ++i) {
+      Cols[i] = DomainMap->getGlobalElement(i);
     }
+
+    // Now append to Cols any ghost column entries
+    int current_localNumCols = ColMap->getLocalNumElements();
+    for (int i(0); i < current_localNumCols; ++i) {
+      if ( DomainMap->isNodeGlobalElement( ColMap->getGlobalElement(i) ) ) {
+        Cols.push_back( ColMap->getGlobalElement(i) );
+      }
+    }
+    
+    size_t new_localNumCols = Cols.size();
+    size_t new_globalNumCols;
+    Teuchos::reduceAll(*Comm, Teuchos::REDUCE_SUM, 1, &new_localNumCols, &new_globalNumCols);
+
+    // Create new column std::map
+    NewColMap_ = Teuchos::rcp<map_t>( new map_t( new_globalNumCols, new_localNumCols, /*&Cols[0],*/ DomainMap->getIndexBase(), Comm ) ); // AquiEEP
+
+    // New Graph
+    std::vector<size_t> NumIndicesPerRow(localNumRows);
+    for (int i(0); i < localNumRows; ++i) {
+      NumIndicesPerRow[i] = orig->getNumEntriesInLocalRow(i);
+    }
+    Teuchos::ArrayView<const size_t> array_NumIndicesPerRow(NumIndicesPerRow.data(), localNumRows);
+    NewGraph_ = new cg_t( /*Teuchos::Copy,*/ RowMap, NewColMap_, array_NumIndicesPerRow );
+
+    size_t MaxNumEntries = orig->getGlobalMaxNumRowEntries();
+    //size_t NumEntries;
+    std::vector<GlobalOrdinal> Indices( MaxNumEntries );
+    for (int i(0); i < localNumRows; ++i) {
+      //GlobalOrdinal RowGID = RowMap->getGlobalElement(i);
+      //orig.Graph().ExtractGlobalRowCopy( RowGID, MaxNumEntries, NumEntries, &Indices[0] );
+      //NewGraph_->InsertGlobalIndices( RowGID, NumEntries, &Indices[0] );
+    }
+#if 0
     const Epetra_Map & RangeMap = orig.RangeMap();
     NewGraph_->FillComplete(DomainMap,RangeMap);
 
-    //intial construction of matrix 
+    // Intial construction of matrix 
     Epetra_CrsMatrix * NewMatrix = new Epetra_CrsMatrix( View, *NewGraph_ );
 
-    //insert views of row values
+    // Insert views of row values
     int * myIndices;
     double * myValues;
     int indicesCnt;
-    int numMyRows = NewMatrix->NumMyRows();
+    int numMyRows = NewMatrix->localNumRows();
     for( int i = 0; i < numMyRows; ++i )
     {
       orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
@@ -154,6 +165,7 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
     NewMatrix->FillComplete(DomainMap,RangeMap);
 
     this->newObj_ = NewMatrix;
+#endif
   }
 #endif
   return this->newObj_;

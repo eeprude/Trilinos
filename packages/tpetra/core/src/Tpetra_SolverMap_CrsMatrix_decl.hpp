@@ -55,7 +55,7 @@ private:
   // avoid virtual function hidden warning
   using StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::construct;
 
-  Map<LocalOrdinal, GlobalOrdinal, Node> * NewColMap_;
+  Teuchos::RCP< Map<LocalOrdinal, GlobalOrdinal, Node> > NewColMap_;
   CrsGraph<LocalOrdinal, GlobalOrdinal, Node> * NewGraph_;
 };
 
