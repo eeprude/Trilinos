@@ -55,8 +55,8 @@ private:
   // avoid virtual function hidden warning
   using StructuralSameTypeTransform< CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::construct;
 
-  Teuchos::RCP< Map<LocalOrdinal, GlobalOrdinal, Node> > NewColMap_;
-  CrsGraph<LocalOrdinal, GlobalOrdinal, Node> * NewGraph_;
+  Teuchos::RCP< Map     <LocalOrdinal, GlobalOrdinal, Node> > NewColMap_;
+  Teuchos::RCP< CrsGraph<LocalOrdinal, GlobalOrdinal, Node> > NewGraph_;
 };
 
 } // namespace Tpetra

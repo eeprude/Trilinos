@@ -32,7 +32,7 @@ template <class Scalar,
           class Node>
 SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SolverMap_CrsMatrix()
 //: NewColMap_(nullptr)
-  : NewGraph_ (nullptr)
+//: NewGraph_ (nullptr)
 {
   // Nothing to do
 }
@@ -50,10 +50,10 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_CrsMa
     this->newObj_.reset();
   }
 
-  if (NewGraph_) {
-    std::cout << "EEP at solvermap_cm_transform<>::destructor(): calling NewGraph_.reset()" << std::endl;
-    delete this->NewGraph_;
-  }
+  //if (NewGraph_) {
+  //  std::cout << "EEP at solvermap_cm_transform<>::destructor(): calling NewGraph_.reset()" << std::endl;
+  //  delete this->NewGraph_;
+  //}
   
   //if (NewColMap_) {
   //  std::cout << "EEP at solvermap_cm_transform<>::destructor(): calling NewColMap_.reset()" << std::endl;
@@ -72,20 +72,19 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
 {
   using map_t = Map<LocalOrdinal, GlobalOrdinal, Node>;
   using cg_t = CrsGraph<LocalOrdinal, GlobalOrdinal, Node>;
+  using cm_t = CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
 
   this->origObj_ = orig;
 
   assert( !orig.IndicesAreGlobal() );
-#if 0 // AquiEEP
-  this->newObj_ = this->origObj_;
-#else
-  //test if matrix has missing local columns in its col std::map
+
+  // Test if matrix has missing local columns in its col std::map
   Teuchos::RCP<const map_t> RowMap    = orig->getRowMap();
   Teuchos::RCP<const map_t> DomainMap = orig->getDomainMap();
   Teuchos::RCP<const map_t> ColMap    = orig->getColMap();
 
   Teuchos::RCP<const Teuchos::Comm<int>> Comm = RowMap->getComm();
-  int localNumRows = RowMap->getLocalNumElements();
+  size_t localNumRows = RowMap->getLocalNumElements();
   size_t domain_localNumCols = DomainMap->getLocalNumElements();
 
   size_t localNumDifferences = 0;
@@ -112,8 +111,8 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
     }
 
     // Now append to Cols any ghost column entries
-    int current_localNumCols = ColMap->getLocalNumElements();
-    for (int i(0); i < current_localNumCols; ++i) {
+    size_t current_localNumCols = ColMap->getLocalNumElements();
+    for (size_t i(0); i < current_localNumCols; ++i) {
       if ( DomainMap->isNodeGlobalElement( ColMap->getGlobalElement(i) ) ) {
         Cols.push_back( ColMap->getGlobalElement(i) );
       }
@@ -128,46 +127,67 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
 
     // New Graph
     std::vector<size_t> NumIndicesPerRow(localNumRows);
-    for (int i(0); i < localNumRows; ++i) {
+    for (size_t i(0); i < localNumRows; ++i) {
       NumIndicesPerRow[i] = orig->getNumEntriesInLocalRow(i);
     }
     Teuchos::ArrayView<const size_t> array_NumIndicesPerRow(NumIndicesPerRow.data(), localNumRows);
-    NewGraph_ = new cg_t( /*Teuchos::Copy,*/ RowMap, NewColMap_, array_NumIndicesPerRow );
+    NewGraph_ = Teuchos::rcp<cg_t>( new cg_t( /*Teuchos::Copy,*/ RowMap, NewColMap_, array_NumIndicesPerRow ) );
 
+    typename cg_t::nonconst_global_inds_host_view_type sourceIndices; //( MaxNumEntries ); // AquiEEP
+    size_t NumEntries;
     size_t MaxNumEntries = orig->getGlobalMaxNumRowEntries();
-    //size_t NumEntries;
-    std::vector<GlobalOrdinal> Indices( MaxNumEntries );
-    for (int i(0); i < localNumRows; ++i) {
-      //GlobalOrdinal RowGID = RowMap->getGlobalElement(i);
-      //orig.Graph().ExtractGlobalRowCopy( RowGID, MaxNumEntries, NumEntries, &Indices[0] );
-      //NewGraph_->InsertGlobalIndices( RowGID, NumEntries, &Indices[0] );
+    std::vector<GlobalOrdinal> destIndices( MaxNumEntries );
+    for (size_t i(0); i < localNumRows; ++i) {
+      GlobalOrdinal RowGID = RowMap->getGlobalElement(i);
+      orig->getGraph()->getGlobalRowCopy( RowGID, sourceIndices, NumEntries );
+      for (size_t j(0); j < NumEntries; ++j) {
+	destIndices[j] = sourceIndices[j];
+      }
+      NewGraph_->insertGlobalIndices( RowGID, NumEntries, destIndices.data() );
     }
+    Teuchos::RCP<const map_t> RangeMap = orig->getRangeMap();
+    NewGraph_->fillComplete(DomainMap,RangeMap);
+
+    // Initial construction of matrix 
+    Teuchos::RCP<cm_t> NewMatrix = Teuchos::rcp<cm_t>( new cm_t( NewGraph_ ) );
+
 #if 0
-    const Epetra_Map & RangeMap = orig.RangeMap();
-    NewGraph_->FillComplete(DomainMap,RangeMap);
-
-    // Intial construction of matrix 
-    Epetra_CrsMatrix * NewMatrix = new Epetra_CrsMatrix( View, *NewGraph_ );
-
     // Insert views of row values
     int * myIndices;
     double * myValues;
     int indicesCnt;
-    int numMyRows = NewMatrix->localNumRows();
-    for( int i = 0; i < numMyRows; ++i )
-    {
-      orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
-      NewGraph_->ExtractMyRowView( i, indicesCnt, myIndices );
+#endif
+    typename cm_t::values_host_view_type matrixValues;
+    typename cm_t::local_inds_host_view_type matrixIndices;
+    typename cg_t::local_inds_host_view_type localColIndices;
+    std::vector<Scalar> tpetraValues(MaxNumEntries);
+    std::vector<LocalOrdinal> tpetraLocalIndices(MaxNumEntries);
+    size_t new_localNumRows = NewMatrix->getLocalNumRows();
+    for (size_t i(0); i < new_localNumRows; ++i) {
+      //orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
+      orig->getLocalRowView( i
+                           , matrixIndices
+                           , matrixValues
+                           );
 
-      NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
+      //NewGraph_->ExtractMyRowView( i, indicesCnt, myIndices );
+      NewGraph_->getLocalRowView( i
+                                , localColIndices
+                                );
+
+      //NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
+      NewMatrix->insertLocalValues( i
+                                  , localColIndices.size() // AquiEEP numEntries
+                                  , tpetraValues.data()
+                                  , tpetraLocalIndices.data()
+                                  );
     }
 
-    NewMatrix->FillComplete(DomainMap,RangeMap);
+    NewMatrix->fillComplete(DomainMap,RangeMap);
 
     this->newObj_ = NewMatrix;
-#endif
   }
-#endif
+
   return this->newObj_;
 }
 
