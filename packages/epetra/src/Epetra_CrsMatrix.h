@@ -1082,8 +1082,13 @@ or if the number of entries in this row exceed the Length parameter.
   //! Returns the number of global matrix rows.
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES
   int  NumGlobalRows() const {
-      if(RowMap().GlobalIndicesInt())
+    if(RowMap().GlobalIndicesInt()) {
+      std::cout << "Passing through NumGlobalRows() int..." << std::endl;
         return (int) NumGlobalRows64();
+    }
+    else {
+      std::cout << "Passing through NumGlobalRows() throw..." << std::endl;
+    }
       throw "Epetra_CrsMatrix::NumGlobalRows: GlobalIndices not int.";
     }
 #endif
