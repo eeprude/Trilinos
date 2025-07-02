@@ -45,6 +45,8 @@ namespace Tpetra {
     virtual ~Transform() //= default; // AquiEEP
     {
       std::cout << "Passing through Transform<>::destructor()"
+	        << "\n origObj_ = " << origObj_
+	        << "\n newObj_ = " << newObj_
 		<< std::endl;
     }
   

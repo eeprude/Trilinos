@@ -40,11 +40,11 @@ template <class Scalar,
 SolverMap_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SolverMap_LinearProblem()
 {
   std::cout << "EEP at solvermap_lp_transform<>::destructor(): entering" << std::endl;
-  if ((this->newObj_.get() != nullptr             ) &&
-      (this->newObj_.get() != this->origObj_.get())) {
-    std::cout << "EEP at solvermap_lp_transform<>::destructor(): calling newObj_.reset()" << std::endl;
-    this->newObj_.reset();
-  }
+  //if ((this->newObj_.get() != nullptr             ) &&
+  //    (this->newObj_.get() != this->origObj_.get())) {
+  //  std::cout << "EEP at solvermap_lp_transform<>::destructor(): calling newObj_.reset()" << std::endl;
+  //  this->newObj_.reset();
+  //}
   std::cout << "EEP at solvermap_lp_transform<>::destructor(): leaving" << std::endl;
 }
 

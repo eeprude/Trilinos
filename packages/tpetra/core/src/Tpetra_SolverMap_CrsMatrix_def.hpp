@@ -87,18 +87,18 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
   size_t localNumRows = RowMap->getLocalNumElements();
   size_t domain_localNumCols = DomainMap->getLocalNumElements();
 
-  size_t localNumDifferences = 0;
+  size_t localAmountOfDifferences(0);
   for (size_t i(0); i < domain_localNumCols; ++i) {
     if (DomainMap->getGlobalElement(i) != ColMap->getGlobalElement(i)) {
-      localNumDifferences = 1;
+      localAmountOfDifferences += 1;
       break;
     }
   }
 
-  size_t globalNumDifferences = 0;
-  Teuchos::reduceAll(*Comm, Teuchos::REDUCE_SUM, 1, &localNumDifferences, &globalNumDifferences);
+  size_t globalAmountOfDifferences(0);
+  Teuchos::reduceAll(*Comm, Teuchos::REDUCE_SUM, 1, &localAmountOfDifferences, &globalAmountOfDifferences);
   
-  if (globalNumDifferences == 0) {
+  if (globalAmountOfDifferences == 0) {
     this->newObj_ = this->origObj_;
   }
   else {
@@ -123,7 +123,13 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
     Teuchos::reduceAll(*Comm, Teuchos::REDUCE_SUM, 1, &new_localNumCols, &new_globalNumCols);
 
     // Create new column std::map
-    NewColMap_ = Teuchos::rcp<map_t>( new map_t( new_globalNumCols, new_localNumCols, /*&Cols[0],*/ DomainMap->getIndexBase(), Comm ) ); // AquiEEP
+    //NewColMap_ = new Epetra_Map( NewNumGlobalCols, NewNumMyCols,&Cols[0], DomainMap.IndexBase64(), Comm );
+    NewColMap_ = Teuchos::rcp<map_t>( new map_t( new_globalNumCols         // global_size_t       numGlobalElements
+                                               , &Cols[0]                  // global_ordinal_type indexList[]
+                                               , new_localNumCols          // local_ordinal_type  indexListSize
+                                               , DomainMap->getIndexBase() // global_ordinal_type indexBase
+                                               , Comm
+                                               ) );
 
     // New Graph
     std::vector<size_t> NumIndicesPerRow(localNumRows);
@@ -133,15 +139,15 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
     Teuchos::ArrayView<const size_t> array_NumIndicesPerRow(NumIndicesPerRow.data(), localNumRows);
     NewGraph_ = Teuchos::rcp<cg_t>( new cg_t( /*Teuchos::Copy,*/ RowMap, NewColMap_, array_NumIndicesPerRow ) );
 
-    typename cg_t::nonconst_global_inds_host_view_type sourceIndices; //( MaxNumEntries ); // AquiEEP
-    size_t NumEntries;
     size_t MaxNumEntries = orig->getGlobalMaxNumRowEntries();
     std::vector<GlobalOrdinal> destIndices( MaxNumEntries );
     for (size_t i(0); i < localNumRows; ++i) {
       GlobalOrdinal RowGID = RowMap->getGlobalElement(i);
-      orig->getGraph()->getGlobalRowCopy( RowGID, sourceIndices, NumEntries );
+      typename cg_t::global_inds_host_view_type sourceIndices;
+      orig->getGraph()->getGlobalRowView( RowGID, sourceIndices );
+      size_t NumEntries( sourceIndices.size() );
       for (size_t j(0); j < NumEntries; ++j) {
-	destIndices[j] = sourceIndices[j];
+        destIndices[j] = sourceIndices[j];
       }
       NewGraph_->insertGlobalIndices( RowGID, NumEntries, destIndices.data() );
     }
@@ -157,29 +163,38 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
     double * myValues;
     int indicesCnt;
 #endif
-    typename cm_t::values_host_view_type matrixValues;
-    typename cm_t::local_inds_host_view_type matrixIndices;
-    typename cg_t::local_inds_host_view_type localColIndices;
-    std::vector<Scalar> tpetraValues(MaxNumEntries);
-    std::vector<LocalOrdinal> tpetraLocalIndices(MaxNumEntries);
+    typename cm_t::local_inds_host_view_type orig_localRowIndices;
+    typename cm_t::values_host_view_type     orig_localRowValues;
+
+    typename cg_t::local_inds_host_view_type newGraph_localRowIndices;
+
+    std::vector<Scalar>       newMatrix_localRowValues (MaxNumEntries);
+    std::vector<LocalOrdinal> newMatrix_localRowIndices(MaxNumEntries);
     size_t new_localNumRows = NewMatrix->getLocalNumRows();
     for (size_t i(0); i < new_localNumRows; ++i) {
       //orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
       orig->getLocalRowView( i
-                           , matrixIndices
-                           , matrixValues
+                           , orig_localRowIndices
+                           , orig_localRowValues
                            );
 
       //NewGraph_->ExtractMyRowView( i, indicesCnt, myIndices );
       NewGraph_->getLocalRowView( i
-                                , localColIndices
+                                , newGraph_localRowIndices
                                 );
 
+      assert( orig_localRowIndices.size() == newGraph_localRowIndices.size() );
+
       //NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
+      size_t numEntries( newGraph_localRowIndices.size() );
+      for (size_t j(0); j < numEntries; ++j) {
+        newMatrix_localRowValues [j] = orig_localRowValues [j];
+        newMatrix_localRowIndices[j] = orig_localRowIndices[j];
+      }
       NewMatrix->insertLocalValues( i
-                                  , localColIndices.size() // AquiEEP numEntries
-                                  , tpetraValues.data()
-                                  , tpetraLocalIndices.data()
+                                  , numEntries
+                                  , newMatrix_localRowValues.data()
+                                  , newMatrix_localRowIndices.data()
                                   );
     }
 
