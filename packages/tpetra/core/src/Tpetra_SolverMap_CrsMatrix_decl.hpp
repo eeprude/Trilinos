@@ -19,9 +19,10 @@
 namespace Tpetra {
 
 ///
-/** Given an input CrsMatrix, the column map is checked for missing indices associated
- *  with the local rows.  If found, a view of the CrsMatrix is formed using a new
- *  CrsGraph with a fixed column mapping including all local row indices.
+/** Given an input CrsMatrix, the column map is checked for missing indices
+ *  associated with the local rows. If found, a view of the CrsMatrix is // AquiEEP ???
+ *  formed using a new CrsGraph with a fixed column mapping including all
+ *  local row indices.
  */
 template <class Scalar,
           class LocalOrdinal,
@@ -49,7 +50,7 @@ using OriginalType = typename StructuralSameTypeTransform< CrsMatrix<Scalar, Loc
   NewType operator()( const OriginalType & orig );
 
 private:
-  template<typename int_type>
+  /*template<typename int_type>*/
   NewType construct( OriginalType orig );
 
   // avoid virtual function hidden warning

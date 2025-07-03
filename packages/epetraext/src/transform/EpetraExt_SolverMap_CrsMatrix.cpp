@@ -84,6 +84,7 @@ construct( OriginalTypeRef orig )
 
   int MatchAll = 0;
   Comm.SumAll( &Match, &MatchAll, 1 );
+  std::cout << "In EpetraExt::CsrMatrix_SolverMap::construct(): MatchAll = " << MatchAll << std::endl;
 
   if( !MatchAll )
   {
