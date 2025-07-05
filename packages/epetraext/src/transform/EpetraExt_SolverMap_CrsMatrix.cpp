@@ -86,26 +86,58 @@ construct( OriginalTypeRef orig )
   Comm.SumAll( &Match, &MatchAll, 1 );
   std::cout << "In EpetraExt::CsrMatrix_SolverMap::construct(): MatchAll = " << MatchAll << std::endl;
 
-  if( !MatchAll )
+  if (false) // ( !MatchAll ) // AquiEEP
   {
     newObj_ = origObj_;
   }
   else
   {
+    std::cout << "Egora 000"
+              << ": RowMap.getLocalNumElements() = " << RowMap.NumMyElements()
+              << ", DomMap.getLocalNumElements() = " << DomainMap.NumMyElements()
+              << ", ColMap.getLocalNumElements() = " << ColMap.NumMyElements()
+              << std::endl;
+
     //create ColMap with all local rows included
     std::vector<int_type> Cols(NumCols);
     //fill Cols list with GIDs of all local columns 
     for( int i = 0; i < NumCols; ++i )
       Cols[i] = (int_type) DomainMap.GID64(i);
 
+    std::cout << "Egora 001"
+              << ": NumCols = " << NumCols
+              << std::endl;
+
     //now append to Cols any ghost column entries
     int NumMyCols = ColMap.NumMyElements();
-    for( int i = 0; i < NumMyCols; ++i )
-      if( !DomainMap.MyGID( ColMap.GID64(i) ) ) Cols.push_back( (int_type) ColMap.GID64(i) );
-    
+    for( int i = 0; i < NumMyCols; ++i ) {
+      std::cout << "Egora 001.a"
+                << ": i = " << i
+                << ", globalI = " << ColMap.GID64(i)
+                << std::endl;
+      if( !DomainMap.MyGID( ColMap.GID64(i) ) ) {
+        std::cout << "Egora 001.b"
+                << ": i = " << i
+                << ", node counted"
+                << std::endl;
+        Cols.push_back( (int_type) ColMap.GID64(i) );
+      }
+    }
+
+    std::cout << "Egora 002"
+              << ": NumMyCols = " << NumMyCols
+              << ", Cols.size() = " << Cols.size()
+              << std::endl;
+
     int NewNumMyCols = Cols.size();
     int NewNumGlobalCols;
     Comm.SumAll( &NewNumMyCols, &NewNumGlobalCols, 1 );
+
+    std::cout << "Egora 003"
+              << ": NewNumMyCols = " << NewNumMyCols
+              << ", NewNumGlobalCols = " << NewNumGlobalCols
+              << std::endl;
+
     //create new column std::map
     NewColMap_ = new Epetra_Map( NewNumGlobalCols, NewNumMyCols,&Cols[0], DomainMap.IndexBase64(), Comm );
 
@@ -129,6 +161,12 @@ construct( OriginalTypeRef orig )
 
     //intial construction of matrix 
     Epetra_CrsMatrix * NewMatrix = new Epetra_CrsMatrix( View, *NewGraph_ );
+
+    std::cout << "Egora 011"
+              << ": new RowMap->getLocalNumElements() = " << NewMatrix->RowMap().NumMyElements()
+              << ", new DomMap->getLocalNumElements() = " << NewMatrix->DomainMap().NumMyElements()
+              << ", new ColMap->getLocalNumElements() = " << NewMatrix->ColMap().NumMyElements()
+              << std::endl;
 
     //insert views of row values
     int * myIndices;

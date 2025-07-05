@@ -103,7 +103,11 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
 
     size_t localNumRows = RowMap->getLocalNumElements();
 
-    std::cout << "Agora 000" << std::endl;
+    std::cout << "Tgora 000"
+              << ": RowMap->getLocalNumElements() = " << RowMap->getLocalNumElements()
+              << ", DomMap->getLocalNumElements() = " << DomainMap->getLocalNumElements()
+              << ", ColMap->getLocalNumElements() = " << ColMap->getLocalNumElements()
+              << std::endl;
     
     // Create ColMap with all local rows included
     std::vector<GlobalOrdinal> globalColIndices(domain_localNumCols);
@@ -113,23 +117,39 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
       globalColIndices[i] = DomainMap->getGlobalElement(i);
     }
 
-    std::cout << "Agora 001" << std::endl;
+    std::cout << "Tgora 001"
+              << ": domain_localNumCols = " << domain_localNumCols
+              << std::endl;
 
     // Now append to globalColIndices any ghost column entries
     size_t current_localNumCols = ColMap->getLocalNumElements();
     for (size_t i(0); i < current_localNumCols; ++i) {
-      if ( DomainMap->isNodeGlobalElement( ColMap->getGlobalElement(i) ) ) {
+      std::cout << "Tgora 001.a"
+                << ": i = " << i
+                << ", globalI = " << ColMap->getGlobalElement(i)
+                << std::endl;
+      if ( DomainMap->isNodeGlobalElement( ColMap->getGlobalElement(i) ) == false ) {
+        std::cout << "Tgora 001.b"
+                << ": i = " << i
+                << ", node counted"
+                << std::endl;
         globalColIndices.push_back( ColMap->getGlobalElement(i) );
       }
     }
     
-    std::cout << "Agora 002" << std::endl;
+    std::cout << "Tgora 002"
+              << ": current_localNumCols = " << current_localNumCols
+              << ", globalColIndices.size() = " << globalColIndices.size()
+              << std::endl;
 
     size_t new_localNumCols = globalColIndices.size();
     size_t new_globalNumCols;
     Teuchos::reduceAll(*Comm, Teuchos::REDUCE_SUM, 1, &new_localNumCols, &new_globalNumCols);
 
-    std::cout << "Agora 003" << std::endl;
+    std::cout << "Tgora 003"
+              << ": new_localNumCols = " << new_localNumCols
+              << ", new_globalNumCols = " << new_globalNumCols
+              << std::endl;
 
     // Create new column map
     //NewColMap_ = new Epetra_Map( NewNumGlobalCols, NewNumMyCols,&globalColIndices[0], DomainMap.IndexBase64(), Comm );
@@ -140,7 +160,7 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
                                                , Comm
                                                ) );
 
-    std::cout << "Agora 004" << std::endl;
+    std::cout << "Tgora 004" << std::endl;
 
     // New Graph
     std::vector<size_t> NumIndicesPerRow(localNumRows);
@@ -148,38 +168,43 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
       NumIndicesPerRow[i] = orig->getNumEntriesInLocalRow(i);
     }
     Teuchos::ArrayView<const size_t> array_NumIndicesPerRow(NumIndicesPerRow.data(), localNumRows);
+    //NewGraph_ = new Epetra_CrsGraph( Copy, RowMap, *NewColMap_, &NumIndicesPerRow[0] );
     NewGraph_ = Teuchos::rcp<cg_t>( new cg_t( /*Teuchos::Copy,*/ RowMap, NewColMap_, array_NumIndicesPerRow ) );
 
-    std::cout << "Agora 005" << std::endl;
+    std::cout << "Tgora 005" << std::endl;
 
     size_t MaxNumEntries = orig->getGlobalMaxNumRowEntries();
     std::vector<GlobalOrdinal> destIndices( MaxNumEntries );
     for (size_t i(0); i < localNumRows; ++i) {
       GlobalOrdinal RowGID = RowMap->getGlobalElement(i);
-      std::cout << "Agora 006, i = " << i << std::endl;
+      std::cout << "Tgora 006, i = " << i << std::endl;
       typename cg_t::nonconst_global_inds_host_view_type sourceIndices("si",MaxNumEntries);
       size_t numSourceIndices(0);
       //orig.Graph().ExtractGlobalRowCopy( RowGID, MaxNumEntries, NumEntries, &Indices[0] );
       orig->getGraph()->getGlobalRowCopy( RowGID, sourceIndices, numSourceIndices );
-      std::cout << "Agora 007, i = " << i << std::endl;
+      std::cout << "Tgora 007, i = " << i << std::endl;
       size_t NumEntries( numSourceIndices );
       for (size_t j(0); j < NumEntries; ++j) {
         destIndices[j] = sourceIndices[j];
       }
       //NewGraph_->InsertGlobalIndices( RowGID, NumEntries, &Indices[0] );
       NewGraph_->insertGlobalIndices( RowGID, NumEntries, destIndices.data() );
-      std::cout << "Agora 008, i = " << i << std::endl;
+      std::cout << "Tgora 008, i = " << i << std::endl;
     }
-    std::cout << "Agora 009" << std::endl;
+    std::cout << "Tgora 009" << std::endl;
     Teuchos::RCP<const map_t> RangeMap = orig->getRangeMap();
     NewGraph_->fillComplete(DomainMap,RangeMap);
 
-    std::cout << "Agora 010" << std::endl;
+    std::cout << "Tgora 010" << std::endl;
 
     // Initial construction of matrix 
     Teuchos::RCP<cm_t> NewMatrix = Teuchos::rcp<cm_t>( new cm_t( NewGraph_ ) );
 
-    std::cout << "Agora 011" << std::endl;
+    std::cout << "Tgora 011"
+              << ": new RowMap->getLocalNumElements() = " << NewMatrix->getRowMap()->getLocalNumElements()
+              << ", new DomMap->getLocalNumElements() = " << NewMatrix->getDomainMap()->getLocalNumElements()
+              << ", new ColMap->getLocalNumElements() = " << NewMatrix->getColMap()->getLocalNumElements()
+              << std::endl;
 
 #if 0
     // Insert views of row values
@@ -195,7 +220,7 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
     std::vector<Scalar>       newMatrix_localRowValues (MaxNumEntries);
     std::vector<LocalOrdinal> newMatrix_localRowIndices(MaxNumEntries);
     size_t new_localNumRows = NewMatrix->getLocalNumRows();
-    std::cout << "Agora 012" << std::endl;
+    std::cout << "Tgora 012" << std::endl;
     for (size_t i(0); i < new_localNumRows; ++i) {
       //orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
       orig->getLocalRowView( i
@@ -203,18 +228,18 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
                            , orig_localRowValues
                            );
 
-      std::cout << "Agora 013, i = " << i << std::endl;
+      std::cout << "Tgora 013, i = " << i << std::endl;
 
       //NewGraph_->ExtractMyRowView( i, indicesCnt, myIndices );
       NewGraph_->getLocalRowView( i
                                 , newGraph_localRowIndices
                                 );
 
-      std::cout << "Agora 014, i = " << i << std::endl;
+      std::cout << "Tgora 014, i = " << i << std::endl;
 
       assert( orig_localRowIndices.size() == newGraph_localRowIndices.size() );
 
-      std::cout << "Agora 015, i = " << i << std::endl;
+      std::cout << "Tgora 015, i = " << i << std::endl;
 
       //NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
       size_t numEntries( newGraph_localRowIndices.size() );
@@ -227,14 +252,14 @@ SolverMap_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::construct( Origi
                                    , newMatrix_localRowValues.data()
                                    , newMatrix_localRowIndices.data()
                                    );
-      std::cout << "Agora 016, i = " << i << std::endl;
+      std::cout << "Tgora 016, i = " << i << std::endl;
     }
 
-    std::cout << "Agora 017" << std::endl;
+    std::cout << "Tgora 017" << std::endl;
 
     NewMatrix->fillComplete(DomainMap,RangeMap);
 
-    std::cout << "Agora 018" << std::endl;
+    std::cout << "Tgora 018" << std::endl;
 
     this->newObj_ = NewMatrix;
   }
