@@ -45,7 +45,7 @@ using OriginalType = typename ViewTransform< CrsMatrix<Scalar, LocalOrdinal, Glo
   ///
   /** Constructs "reindexed" Matrix
    */
-  NewType operator()( OriginalType const & orig );
+  NewType operator()( OriginalType const & origMatrix );
 
 private:
   Teuchos::RCP< Map<LocalOrdinal, GlobalOrdinal, Node> const> newRowMap_;

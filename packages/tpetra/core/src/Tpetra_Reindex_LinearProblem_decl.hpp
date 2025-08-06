@@ -49,7 +49,7 @@ using OriginalType = typename ViewTransform< LinearProblem<Scalar, LocalOrdinal,
   ///
   /** Constructs a new view the original LP, "reindexed" using the given NewRowMap.
    */
-  NewType operator()( OriginalType const & orig );
+  NewType operator()( OriginalType const & origProblem );
 
   //bool fwd(); // Aqui
 

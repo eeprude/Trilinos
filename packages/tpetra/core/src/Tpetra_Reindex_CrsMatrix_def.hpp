@@ -11,11 +11,10 @@
 #define TPETRA_REINDEX_CRSMATRIX_DEF_HPP
 
 #include <Tpetra_Reindex_CrsMatrix_decl.hpp>
+#include <Tpetra_Vector_decl.hpp>
+#include <Tpetra_Import_decl.hpp>
 
 #include <vector>
-
-//#include <Epetra_Export.h> // Aqui
-//#include <Epetra_Import.h>
 
 /// \file Tpetra_Reindex_CrsMatrix_def.hpp
 /// \brief Definition of the Tpetra::Reindex_CrsMatrix class
@@ -56,65 +55,82 @@ template <class Scalar,
           class GlobalOrdinal,
           class Node>
 typename Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
-Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & orig )
+Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & origMatrix )
 {
-  this->origObj_ = orig;
-#if 0 // Aqui
-  //test std::map, must have same number of local and global elements as original row std::map
-  //Epetra_Map & OldRowMap = const_cast<Epetra_Map&>(orig.RowMap());
-  Epetra_Map & OldDomainMap = const_cast<Epetra_Map&>(orig.OperatorDomainMap());
-  Epetra_Map & OldColMap = const_cast<Epetra_Map&>(orig.ColMap());
-  int NumMyElements = OldDomainMap.NumMyElements();
-  int_type NumGlobalElements = (int_type) OldDomainMap.NumGlobalElements64();
-  assert( orig.RowMap().NumMyElements() == NewRowMap_.NumMyElements() );
+  using cm_t = CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
 
-  if (NumGlobalElements == 0 && orig.RowMap().NumGlobalElements64() == 0 )
-  {
-    //construct a zero matrix as a placeholder, don't do reindexing analysis.
-    Epetra_CrsMatrix * NewMatrix = new Epetra_CrsMatrix( View, orig.RowMap(), orig.ColMap(), 0 );
-    newObj_ = NewMatrix;
+  this->origObj_ = origMatrix;
+
+  assert( origMatrix->getRowMap()->getLocalNumElements() == newRowMap_->getLocalNumElements() );
+
+  // Aqui orig.OperatorDomainMap()
+  if ((origMatrix->getDomainMap()->getGlobalNumElements() == 0) &&
+      (origMatrix->getRowMap()->getGlobalNumElements()    == 0)) {
+    // Construct a zero matrix as a placeholder, don't do reindexing analysis.
+    this->newObj_ = Teuchos::rcp<cm_t>( new cm_t(origMatrix->getRowMap(), origMatrix->getColMap(), 0) );
   }
   else {
+    using map_t = Map   <               LocalOrdinal, GlobalOrdinal, Node>;
+    using imp_t = Import<               LocalOrdinal, GlobalOrdinal, Node>;
+    using v_t   = Vector<GlobalOrdinal, LocalOrdinal, GlobalOrdinal, Node>;
 
-    //Construct new Column Map
-    typename Epetra_GIDTypeVector<int_type>::impl Cols( OldDomainMap );
-    typename Epetra_GIDTypeVector<int_type>::impl NewCols( OldColMap );
-    Epetra_Import Importer( OldColMap, OldDomainMap );
- 
-    Epetra_Map tmpColMap( NumGlobalElements, NumMyElements, 0, OldDomainMap.Comm() );
- 
-    for( int i = 0; i < NumMyElements; ++i )
-      Cols[i] = (int_type) tmpColMap.GID64(i);
-
-    NewCols.Import( Cols, Importer, Insert );
-
-    std::vector<int_type*> NewColIndices(1);
-    NewCols.ExtractView( &NewColIndices[0] );
-
-    int NumMyColElements = OldColMap.NumMyElements();
-    int_type NumGlobalColElements = (int_type) OldColMap.NumGlobalElements64();
-
-    NewColMap_ = new Epetra_Map( NumGlobalColElements, NumMyColElements, NewColIndices[0], (int_type) OldColMap.IndexBase64(), OldColMap.Comm() );
-
-    //intial construction of matrix 
-    Epetra_CrsMatrix * NewMatrix = new Epetra_CrsMatrix( View, NewRowMap_, *NewColMap_, 0 );
-
-    //insert views of row values
-    int * myIndices;
-    double * myValues;
-    int indicesCnt;
-    int numMyRows = NewMatrix->NumMyRows();
-    for( int i = 0; i < numMyRows; ++i )
-    {
-      orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
-      NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
+    // Construct new column map
+    v_t cols( origMatrix->getDomainMap() );
+    { 
+      size_t origDomainMap_localSize = origMatrix->getDomainMap()->getLocalNumElements();
+      map_t tmpColMap( origMatrix->getDomainMap()->getGlobalNumElements(), origDomainMap_localSize, 0, origMatrix->getDomainMap()->getComm() );
+      for (size_t i(0); i < origDomainMap_localSize; ++i) {
+        cols.replaceLocalValue(i, tmpColMap.getGlobalElement(i));
+      }
     }
 
-    NewMatrix->FillComplete();
+    imp_t importer( origMatrix->getDomainMap(), origMatrix->getColMap() );
+    v_t newCols( origMatrix->getColMap() );
+    newCols.doImport( cols     // const SrcDistObject& source
+	            , importer // const Import<LocalOrdinal, GlobalOrdinal, Node>& importer
+                    , INSERT   // const CombineMode CM
+                    , false    // const bool restrictedMode
+                    );
 
-    newObj_ = NewMatrix;
+    Teuchos::ArrayRCP<const GlobalOrdinal> newColIndices = newCols.getData();
+    this->newColMap_ = Teuchos::RCP<map_t>( new map_t( origMatrix->getColMap()->getGlobalNumElements() // const global_size_t numGlobalElements
+                                                     , &newColIndices[0]                               // const global_ordinal_type indexList[]
+                                                     , origMatrix->getColMap()->getLocalNumElements()  // const local_ordinal_type indexListSize
+                                                     , origMatrix->getColMap()->getIndexBase()         // const global_ordinal_type indexBase
+                                                     , origMatrix->getColMap()->getComm()              // const Teuchos::RCP<const Teuchos::Comm<int> >& comm
+                                                     ));
+
+    // Create the new matrix 
+    Teuchos::RCP<cm_t> newMatrix = Teuchos::rcp<cm_t>( new cm_t(this->newRowMap_, this->newColMap_, 0) );
+
+    size_t const origMatrix_maxNumEntries = origMatrix->getGlobalMaxNumRowEntries();
+    std::vector<Scalar>       newMatrix_localValues (origMatrix_maxNumEntries);
+    std::vector<LocalOrdinal> newMatrix_localIndices(origMatrix_maxNumEntries);
+
+    typename cm_t::local_inds_host_view_type origMatrix_localIndices;
+    typename cm_t::values_host_view_type     origMatrix_localValues;
+
+    size_t const newMatrix_localNumRows = newMatrix->getLocalNumRows();
+    for (size_t i(0); i < newMatrix_localNumRows; ++i) {
+      origMatrix->getLocalRowView( i, origMatrix_localIndices, origMatrix_localValues );
+
+      size_t const numEntries( origMatrix_localIndices.size() );
+      for (size_t j(0); j < numEntries; ++j) {
+        newMatrix_localValues [j] = origMatrix_localValues[j];
+        newMatrix_localIndices[j] = origMatrix_localIndices[j];
+      }
+      newMatrix->replaceLocalValues( i                             // const LocalOrdinal localRow
+                                   , numEntries                    // const LocalOrdinal numEnt
+                                   , newMatrix_localValues.data()  // const Scalar       inputVals[]
+                                   , newMatrix_localIndices.data() // const LocalOrdinal inputCols[]
+                                   );
+    }
+
+    newMatrix->fillComplete();
+
+    this->newObj_ = newMatrix;
   }
-#endif
+
   return this->newObj_;
 }
 

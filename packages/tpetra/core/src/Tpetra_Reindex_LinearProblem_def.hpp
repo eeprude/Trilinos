@@ -53,7 +53,7 @@ template <class Scalar,
           class GlobalOrdinal,
           class Node>
 typename Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
-Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & orig )
+Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & origProblem )
 {
   using map_t = Map          <        LocalOrdinal, GlobalOrdinal, Node>;
   using mv_t  = MultiVector  <Scalar, LocalOrdinal, GlobalOrdinal, Node>;
@@ -61,11 +61,11 @@ Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Or
   using lp_t  = LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
 
   // Save original object
-  this->origObj_ = orig;
+  this->origObj_ = origProblem;
 
-  cm_t * oldMatrix = dynamic_cast<cm_t *>(orig->getMatrix().get());
-  Teuchos::RCP<mv_t>        oldRHS    = orig->getRHS();
-  Teuchos::RCP<mv_t>        oldLHS    = orig->getLHS();
+  cm_t * oldMatrix = dynamic_cast<cm_t *>(origProblem->getMatrix().get());
+  Teuchos::RCP<mv_t>        oldRHS    = origProblem->getRHS();
+  Teuchos::RCP<mv_t>        oldLHS    = origProblem->getLHS();
   Teuchos::RCP<map_t const> oldRowMap = oldMatrix->getMap();
 
   // If no new map has been passed in, create one with lex ordering

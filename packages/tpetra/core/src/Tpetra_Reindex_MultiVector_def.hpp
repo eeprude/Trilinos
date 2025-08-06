@@ -50,17 +50,17 @@ template <class Scalar,
           class GlobalOrdinal,
           class Node>
 typename Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
-Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & orig )
+Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & origMultiVector )
 {
-  this->origObj_ = orig;
+  this->origObj_ = origMultiVector;
 #if 0 // Aqui
   //test std::map, must have same number of local and global elements as original row std::map
-  assert( orig.Map().NumMyElements() == newRowMap_.NumMyElements() );
+  assert( origMultiVector.Map().NumMyElements() == newRowMap_.NumMyElements() );
 
   std::vector<double*> MyValues(1);
   int MyLDA;
-  int NumVectors = orig.NumVectors();
-  orig.ExtractView( &MyValues[0], &MyLDA );
+  int NumVectors = origMultiVector.NumVectors();
+  origMultiVector.ExtractView( &MyValues[0], &MyLDA );
 
   Epetra_MultiVector * newMV = new Epetra_MultiVector( View, newRowMap_, MyValues[0], MyLDA, NumVectors );
 
@@ -74,15 +74,15 @@ template <class Scalar,
           class GlobalOrdinal,
           class Node>
 typename Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
-Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::transform( OriginalType orig )
+Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::transform( OriginalType origMultiVector )
 {
   //test std::map, must have same number of local and global elements as original row std::map
-  assert( orig.Map().NumMyElements() == newRowMap_.NumMyElements() );
+  assert( origMultiVector.Map().NumMyElements() == newRowMap_.NumMyElements() );
 #if 0 // Aqui
   std::vector<double*> MyValues(1);
   int MyLDA;
-  int NumVectors = orig.NumVectors();
-  orig.ExtractView( &MyValues[0], &MyLDA );
+  int NumVectors = origMultiVector.NumVectors();
+  origMultiVector.ExtractView( &MyValues[0], &MyLDA );
 
   return Teuchos::rcp(new Epetra_MultiVector( View, newRowMap_, MyValues[0], MyLDA, NumVectors ));
 #else 
