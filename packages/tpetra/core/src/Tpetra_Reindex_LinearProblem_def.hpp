@@ -63,17 +63,14 @@ Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Or
   // Save original object
   this->origObj_ = origProblem;
 
-  cm_t * oldMatrix = dynamic_cast<cm_t *>(origProblem->getMatrix().get());
-  Teuchos::RCP<mv_t>        oldRHS    = origProblem->getRHS();
-  Teuchos::RCP<mv_t>        oldLHS    = origProblem->getLHS();
-  Teuchos::RCP<map_t const> oldRowMap = oldMatrix->getMap();
+  Teuchos::RCP<cm_t>        origMatrix = Teuchos::rcp<cm_t>( dynamic_cast<cm_t *>(origProblem->getMatrix().get()), false );
+  Teuchos::RCP<mv_t>        origRHS    = origProblem->getRHS();
+  Teuchos::RCP<mv_t>        origLHS    = origProblem->getLHS();
+  Teuchos::RCP<map_t const> origRowMap = origMatrix->getMap();
 
-  // If no new map has been passed in, create one with lex ordering
+  // If no new map has been passed in, create one
   if (newRowMap_.get() == nullptr) {
-    size_t        numMyElements     = oldRowMap->getLocalNumElements();
-    global_size_t numGlobalElements = oldRowMap->getGlobalNumElements();
-
-    newRowMap_ = Teuchos::rcp<map_t const>( new map_t(numGlobalElements, numMyElements, 0, oldRowMap->getComm()) );
+    newRowMap_ = Teuchos::rcp<map_t const>( new map_t(origRowMap->getGlobalNumElements(), origRowMap->getLocalNumElements(), 0, origRowMap->getComm()) );
   }
 
   using r_mv_t = Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
@@ -82,9 +79,9 @@ Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Or
   lhsTrans_ = Teuchos::rcp<r_mv_t>( new r_mv_t( newRowMap_ ) );
   rhsTrans_ = Teuchos::rcp<r_mv_t>( new r_mv_t( newRowMap_ ) );
 
-  Teuchos::RCP<cm_t> newMatrix = ((*matTrans_)( Teuchos::rcp<cm_t>(oldMatrix, false) ));
-  Teuchos::RCP<mv_t> newLHS    = ((*lhsTrans_)( oldLHS    ));
-  Teuchos::RCP<mv_t> newRHS    = ((*rhsTrans_)( oldRHS    ));
+  Teuchos::RCP<cm_t> newMatrix = ((*matTrans_)( origMatrix ));
+  Teuchos::RCP<mv_t> newLHS    = ((*lhsTrans_)( origLHS    ));
+  Teuchos::RCP<mv_t> newRHS    = ((*rhsTrans_)( origRHS    ));
 
   this->newObj_ = Teuchos::rcp<lp_t>( new lp_t(newMatrix, newLHS, newRHS) );
 

@@ -52,20 +52,36 @@ template <class Scalar,
 typename Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
 Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & origMultiVector )
 {
+  using mv_t = MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+
   this->origObj_ = origMultiVector;
-#if 0 // Aqui
-  //test std::map, must have same number of local and global elements as original row std::map
-  assert( origMultiVector.Map().NumMyElements() == newRowMap_.NumMyElements() );
+  assert( origMultiVector->getMap()->getLocalNumElements() == this->newRowMap_->getLocalNumElements() );
+  assert( origMultiVector->isConstantStride() == true );
 
-  std::vector<double*> MyValues(1);
-  int MyLDA;
-  int NumVectors = origMultiVector.NumVectors();
-  origMultiVector.ExtractView( &MyValues[0], &MyLDA );
+  Teuchos::ArrayRCP<Teuchos::ArrayRCP<const Scalar> > origValues = origMultiVector->get2dView();
 
-  Epetra_MultiVector * newMV = new Epetra_MultiVector( View, newRowMap_, MyValues[0], MyLDA, NumVectors );
+  using size_type = typename Teuchos::ArrayRCP<Scalar>::size_type;
+  size_type numEntries(0);
+  for (size_type j(0); j < origValues.size(); ++j) {
+    numEntries += origValues[j].size();
+  }
 
-  this->newObj_ = newMV;
-#endif
+  std::vector<Scalar> tmpVec(numEntries);
+  size_t k(0);
+  for (size_type j(0); j < origValues.size(); ++j) {
+    for (size_type i(0); i < origValues[j].size(); ++i) {
+      tmpVec[k++] = origValues[j][i];
+    }
+  }
+
+  Teuchos::ArrayView<Scalar const> valuesToInsert(tmpVec.data(), numEntries);
+  
+  this->newObj_ = Teuchos::RCP<mv_t>( new mv_t( newRowMap_                       // const Teuchos::RCP<const map_type>& map,
+                                              , valuesToInsert                   // const Teuchos::ArrayView<const Scalar>& A,
+                                              , origMultiVector->getStride()     // const size_t LDA,
+                                              , origMultiVector->getNumVectors() // const size_t NumVectors
+                                              ));
+
   return this->newObj_;
 }
 
@@ -76,15 +92,18 @@ template <class Scalar,
 typename Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
 Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::transform( OriginalType origMultiVector )
 {
-  //test std::map, must have same number of local and global elements as original row std::map
-  assert( origMultiVector.Map().NumMyElements() == newRowMap_.NumMyElements() );
+  using mv_t = MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+
+  throw std::runtime_error("Reindex_MultiVector<>::transform() is not implemented yet"); // Aqui
+  assert( origMultiVector->getMap()->getLocalNumElements() == this->newRowMap_->getLocalNumElements() );
+
 #if 0 // Aqui
   std::vector<double*> MyValues(1);
   int MyLDA;
   int NumVectors = origMultiVector.NumVectors();
   origMultiVector.ExtractView( &MyValues[0], &MyLDA );
 
-  return Teuchos::rcp(new Epetra_MultiVector( View, newRowMap_, MyValues[0], MyLDA, NumVectors ));
+  return Teuchos::rcp(new mv_t( View, newRowMap_, MyValues[0], MyLDA, NumVectors ));
 #else 
   return this->newObj_;
 #endif
