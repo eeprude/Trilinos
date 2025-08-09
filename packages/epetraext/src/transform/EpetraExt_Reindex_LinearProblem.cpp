@@ -75,6 +75,7 @@ operator()( OriginalTypeRef orig )
   //If new map not passed in create one with lex ordering
   if( !NewRowMap_ )
   {
+    std::cout << "In EpetraExt LinearProblem_Reindex::operator(): null NewRowMap_ situation" << std::endl;
     int NumMyElements = OldRowMap.NumMyElements();
 
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES

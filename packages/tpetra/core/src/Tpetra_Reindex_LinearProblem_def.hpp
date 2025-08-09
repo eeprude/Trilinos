@@ -70,11 +70,13 @@ Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Or
 
   // If no new map has been passed in, create one
   if (newRowMap_.get() == nullptr) {
+    std::cout << "In Tpetra Reindex_LinearProblem<>::operator(): null newRowMap_ situation" << std::endl;
     newRowMap_ = Teuchos::rcp<map_t const>( new map_t(origRowMap->getGlobalNumElements(), origRowMap->getLocalNumElements(), 0, origRowMap->getComm()) );
   }
 
-  using r_mv_t = Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
   using r_cm_t = Reindex_CrsMatrix  <Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+  using r_mv_t = Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+
   matTrans_ = Teuchos::rcp<r_cm_t>( new r_cm_t( newRowMap_ ) );
   lhsTrans_ = Teuchos::rcp<r_mv_t>( new r_mv_t( newRowMap_ ) );
   rhsTrans_ = Teuchos::rcp<r_mv_t>( new r_mv_t( newRowMap_ ) );

@@ -50,6 +50,8 @@ using OriginalType = typename ViewTransform< CrsMatrix<Scalar, LocalOrdinal, Glo
 private:
   Teuchos::RCP< Map<LocalOrdinal, GlobalOrdinal, Node> const> newRowMap_;
   Teuchos::RCP< Map<LocalOrdinal, GlobalOrdinal, Node>      > newColMap_;
+
+  void printMatrix( OriginalType const & passedMatrix ) const;
 };
 
 } // namespace Tpetra

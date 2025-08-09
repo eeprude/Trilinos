@@ -69,6 +69,7 @@ CrsMatrix_Reindex::NewTypeRef
 CrsMatrix_Reindex::
 Toperator( OriginalTypeRef orig )
 {
+  std::cout << "Entering EpetraExt CrsMatrix_Reindex::Toperator()" << std::endl;
   origObj_ = &orig;
 
   //test std::map, must have same number of local and global elements as original row std::map
@@ -81,6 +82,7 @@ Toperator( OriginalTypeRef orig )
 
   if (NumGlobalElements == 0 && orig.RowMap().NumGlobalElements64() == 0 )
   {
+    std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator(): zero matrix situation" << std::endl;
     //construct a zero matrix as a placeholder, don't do reindexing analysis.
     Epetra_CrsMatrix * NewMatrix = new Epetra_CrsMatrix( View, orig.RowMap(), orig.ColMap(), 0 );
     newObj_ = NewMatrix;
@@ -96,8 +98,26 @@ Toperator( OriginalTypeRef orig )
  
     for( int i = 0; i < NumMyElements; ++i )
       Cols[i] = (int_type) tmpColMap.GID64(i);
+    {
+      int myLength = Cols.MyLength();
+      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                << ": Cols =";
+      for (int j(0); j < myLength; ++j) {
+        std::cout << " " << Cols[j];
+      }
+      std::cout << std::endl;
+    }
 
     NewCols.Import( Cols, Importer, Insert );
+    {
+      int myLength = Cols.MyLength();
+      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                << ": NewCols =";
+      for (int j(0); j < myLength; ++j) {
+        std::cout << " " << NewCols[j];
+      }
+      std::cout << std::endl;
+    }
 
     std::vector<int_type*> NewColIndices(1);
     NewCols.ExtractView( &NewColIndices[0] );
@@ -106,6 +126,27 @@ Toperator( OriginalTypeRef orig )
     int_type NumGlobalColElements = (int_type) OldColMap.NumGlobalElements64();
 
     NewColMap_ = new Epetra_Map( NumGlobalColElements, NumMyColElements, NewColIndices[0], (int_type) OldColMap.IndexBase64(), OldColMap.Comm() );
+
+    {
+      int numEntries = NewRowMap_.NumMyElements();
+      int * aux = NewRowMap_.MyGlobalElements();
+      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                << ": NewRowMap_ =";
+      for (int j(0); j < numEntries; ++j) {
+        std::cout << " " << aux[j];
+      }
+      std::cout << std::endl;
+    }
+    {
+      int numEntries = NewColMap_->NumMyElements();
+      int * aux = NewColMap_->MyGlobalElements();
+      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                << ": NewColMap_ =";
+      for (int j(0); j < numEntries; ++j) {
+        std::cout << " " << aux[j];
+      }
+      std::cout << std::endl;
+    }
 
     //intial construction of matrix 
     Epetra_CrsMatrix * NewMatrix = new Epetra_CrsMatrix( View, NewRowMap_, *NewColMap_, 0 );
@@ -118,6 +159,20 @@ Toperator( OriginalTypeRef orig )
     for( int i = 0; i < numMyRows; ++i )
     {
       orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
+
+      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                << ", calling NewMatrix->InsertMyValues()"
+                << ": i = " << i
+                << ", indicesCnt = " << indicesCnt
+                << ", newMatrix_localValues =";
+      for (int j(0); j < indicesCnt; ++j) {
+        std::cout << " " << myValues[i];
+      }
+      std::cout << ", newMatrix_localIndices =";
+      for (int j(0); j < indicesCnt; ++j) {
+        std::cout << " " << myIndices[i];
+      }
+      std::cout << std::endl;
       NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
     }
 
@@ -126,6 +181,8 @@ Toperator( OriginalTypeRef orig )
     newObj_ = NewMatrix;
 
   }
+
+  std::cout << "Leaving EpetraExt CrsMatrix_Reindex::Toperator()" << std::endl;
 
   return *newObj_;
 }
