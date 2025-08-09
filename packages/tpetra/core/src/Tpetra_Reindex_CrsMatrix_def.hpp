@@ -207,7 +207,7 @@ Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Origin
 
   assert( origMatrix->getRowMap()->getLocalNumElements() == newRowMap_->getLocalNumElements() );
 
-  // Aqui orig.OperatorDomainMap()
+  // AquiEEP orig.OperatorDomainMap()
   if ((origMatrix->getDomainMap()->getGlobalNumElements() == 0) &&
       (origMatrix->getRowMap()->getGlobalNumElements()    == 0)) {
     std::cout << "In Tpetra Reindex_CrsMatrix<>::operator(): zero matrix situation" << std::endl;
