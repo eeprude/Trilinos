@@ -237,14 +237,15 @@ Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Origin
 
         using size_type = typename Teuchos::ArrayView<Scalar>::size_type;
         Teuchos::ArrayRCP<const GlobalOrdinal> aux = cols.getData();
-        std::cout << "In Tpetra Reindex_CrsMatrix<>::operator()"
+        std::cout << "rank " << myRank << " "
+                  << "In Tpetra Reindex_CrsMatrix<>::operator()"
                   << ": cols =";
         for (size_type j(0); j < aux.size(); ++j) {
           std::cout << " " << aux[j];
         }
         std::cout << std::endl;
 
-	std::cout.flush();
+        std::cout.flush();
       }
       teuchosComm->barrier();
     }
@@ -257,14 +258,25 @@ Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Origin
                     , false    // const bool restrictedMode
                     );
     {
-      using size_type = typename Teuchos::ArrayView<Scalar>::size_type;
-      Teuchos::ArrayRCP<const GlobalOrdinal> aux = newCols.getData();
-      std::cout << "In Tpetra Reindex_CrsMatrix<>::operator()"
-                << ": newCols =";
-      for (size_type j(0); j < aux.size(); ++j) {
-        std::cout << " " << aux[j];
+      std::cout.flush();
+      teuchosComm->barrier();
+      for (int p(0); p < numRanks; ++p) {
+        teuchosComm->barrier();
+        if (p != myRank) continue;
+
+        using size_type = typename Teuchos::ArrayView<Scalar>::size_type;
+        Teuchos::ArrayRCP<const GlobalOrdinal> aux = newCols.getData();
+        std::cout << "rank " << myRank << " "
+                  << "In Tpetra Reindex_CrsMatrix<>::operator()"
+                  << ": newCols =";
+        for (size_type j(0); j < aux.size(); ++j) {
+          std::cout << " " << aux[j];
+        }
+        std::cout << std::endl;
+
+        std::cout.flush();
       }
-      std::cout << std::endl;
+      teuchosComm->barrier();
     }
 
     Teuchos::ArrayRCP<const GlobalOrdinal> newColIndicesArray = newCols.getData();
@@ -280,22 +292,44 @@ Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Origin
                                                      ));
 
     {
-      auto aux = this->newRowMap_->getMyGlobalIndices();
-      std::cout << "In Tpetra Reindex_CrsMatrix<>::operator()"
-                << ": newRowMap_ =";
-      for (size_t j(0); j < aux.size(); ++j) {
-        std::cout << " " << aux[j];
+      std::cout.flush();
+      teuchosComm->barrier();
+      for (int p(0); p < numRanks; ++p) {
+        teuchosComm->barrier();
+        if (p != myRank) continue;
+
+        auto aux = this->newRowMap_->getMyGlobalIndices();
+        std::cout << "rank " << myRank << " "
+                  << "In Tpetra Reindex_CrsMatrix<>::operator()"
+                  << ": newRowMap_ =";
+        for (size_t j(0); j < aux.size(); ++j) {
+          std::cout << " " << aux[j];
+        }
+        std::cout << std::endl;
+
+        std::cout.flush();
       }
-      std::cout << std::endl;
+      teuchosComm->barrier();
     }
     {
-      auto aux = this->newColMap_->getMyGlobalIndices();
-      std::cout << "In Tpetra Reindex_CrsMatrix<>::operator()"
-                << ": newColMap_ =";
-      for (size_t j(0); j < aux.size(); ++j) {
-        std::cout << " " << aux[j];
+      std::cout.flush();
+      teuchosComm->barrier();
+      for (int p(0); p < numRanks; ++p) {
+        teuchosComm->barrier();
+        if (p != myRank) continue;
+
+        auto aux = this->newColMap_->getMyGlobalIndices();
+        std::cout << "rank " << myRank << " "
+                  << "In Tpetra Reindex_CrsMatrix<>::operator()"
+                  << ": newColMap_ =";
+        for (size_t j(0); j < aux.size(); ++j) {
+          std::cout << " " << aux[j];
+        }
+        std::cout << std::endl;
+
+        std::cout.flush();
       }
-      std::cout << std::endl;
+      teuchosComm->barrier();
     }
     //this->printMatrix(origMatrix);
 
@@ -309,38 +343,49 @@ Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Origin
     typename cm_t::local_inds_host_view_type origMatrix_localIndices;
     typename cm_t::values_host_view_type     origMatrix_localValues;
 
-    size_t const newMatrix_localNumRows = newMatrix->getLocalNumRows();
-    for (size_t i(0); i < newMatrix_localNumRows; ++i) {
-      //orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
-      //NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
+    {
+      std::cout.flush();
+      teuchosComm->barrier();
+      for (int p(0); p < numRanks; ++p) {
+        teuchosComm->barrier();
+        if (p != myRank) continue;
 
-      origMatrix->getLocalRowView( i, origMatrix_localIndices, origMatrix_localValues );
+        size_t const newMatrix_localNumRows = newMatrix->getLocalNumRows();
+        for (size_t i(0); i < newMatrix_localNumRows; ++i) {
+          origMatrix->getLocalRowView( i, origMatrix_localIndices, origMatrix_localValues );
 
-      size_t const numEntries( origMatrix_localIndices.size() );
-      for (size_t j(0); j < numEntries; ++j) {
-        newMatrix_localValues [j] = origMatrix_localValues[j];
-        newMatrix_localIndices[j] = origMatrix_localIndices[j];
-      }
+          size_t const numEntries( origMatrix_localIndices.size() );
+          for (size_t j(0); j < numEntries; ++j) {
+            newMatrix_localValues [j] = origMatrix_localValues[j];
+            newMatrix_localIndices[j] = origMatrix_localIndices[j];
+          }
 
-      std::cout << "In Tpetra Reindex_CrsMatrix<>::operator()"
-                << ", calling newMatrix->replaceLocalValues()"
-                << ": i = " << i
-                << ", numEntries = " << numEntries
-                << ", newMatrix_localValues =";
-      for (size_t j(0); j < numEntries; ++j) {
-        std::cout << " " << newMatrix_localValues[j];
+          std::cout << "rank " << myRank << " "
+                    << "In Tpetra Reindex_CrsMatrix<>"
+                    << ", calling insertLocalValues()"
+                    << ": i = " << i
+                    << ", numEntries = " << numEntries
+                    << ", localValues =";
+          for (size_t j(0); j < numEntries; ++j) {
+            std::cout << " " << newMatrix_localValues[j];
+          }
+          std::cout << ", localIndices =";
+          for (size_t j(0); j < numEntries; ++j) {
+            std::cout << " " << newMatrix_localIndices[j];
+          }
+          std::cout << std::endl;
+
+	  newMatrix->insertLocalValues( i                             // const LocalOrdinal localRow
+                                      , numEntries                    // const LocalOrdinal numEnt
+                                      , newMatrix_localValues.data()  // const Scalar       vals[]
+                                      , newMatrix_localIndices.data() // const LocalOrdinal cols[]
+                                      , INSERT                        // const CombineMode  CM
+                                      );
+        }
+
+        std::cout.flush();
       }
-      std::cout << ", newMatrix_localIndices =";
-      for (size_t j(0); j < numEntries; ++j) {
-        std::cout << " " << newMatrix_localIndices[j];
-      }
-      std::cout << std::endl;
-      newMatrix->insertLocalValues( i                             // const LocalOrdinal localRow
-                                  , numEntries                    // const LocalOrdinal numEnt
-                                  , newMatrix_localValues.data()  // const Scalar       vals[]
-                                  , newMatrix_localIndices.data() // const LocalOrdinal cols[]
-                                  , INSERT                        // const CombineMode  CM
-                                  );
+      teuchosComm->barrier();
     }
 
     newMatrix->fillComplete();

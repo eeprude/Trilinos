@@ -55,6 +55,8 @@
 #include <Epetra_Export.h>
 #include <Epetra_Import.h>
 
+#include <Epetra_MpiComm.h>
+
 namespace EpetraExt {
 
 CrsMatrix_Reindex::
@@ -69,6 +71,10 @@ CrsMatrix_Reindex::NewTypeRef
 CrsMatrix_Reindex::
 Toperator( OriginalTypeRef orig )
 {
+  Epetra_MpiComm epetraComm(MPI_COMM_WORLD); 
+  int myRank  ( epetraComm.MyPID()   );
+  int numRanks( epetraComm.NumProc() );
+
   std::cout << "Entering EpetraExt CrsMatrix_Reindex::Toperator()" << std::endl;
   origObj_ = &orig;
 
@@ -99,24 +105,46 @@ Toperator( OriginalTypeRef orig )
     for( int i = 0; i < NumMyElements; ++i )
       Cols[i] = (int_type) tmpColMap.GID64(i);
     {
-      int myLength = Cols.MyLength();
-      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
-                << ": Cols =";
-      for (int j(0); j < myLength; ++j) {
-        std::cout << " " << Cols[j];
+      std::cout.flush();
+      epetraComm.Barrier();
+      for (int p(0); p < numRanks; ++p) {
+        epetraComm.Barrier();
+        if (p != myRank) continue;
+
+        int myLength = Cols.MyLength();
+        std::cout << "rank " << myRank << " "
+                  << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                  << ": Cols =";
+        for (int j(0); j < myLength; ++j) {
+          std::cout << " " << Cols[j];
+        }
+        std::cout << std::endl;
+
+        std::cout.flush();
       }
-      std::cout << std::endl;
+      epetraComm.Barrier();
     }
 
     NewCols.Import( Cols, Importer, Insert );
     {
-      int myLength = Cols.MyLength();
-      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
-                << ": NewCols =";
-      for (int j(0); j < myLength; ++j) {
-        std::cout << " " << NewCols[j];
+      std::cout.flush();
+      epetraComm.Barrier();
+      for (int p(0); p < numRanks; ++p) {
+        epetraComm.Barrier();
+        if (p != myRank) continue;
+
+        int myLength = NewCols.MyLength();
+        std::cout << "rank " << myRank << " "
+                  << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                  << ": NewCols =";
+        for (int j(0); j < myLength; ++j) {
+          std::cout << " " << NewCols[j];
+        }
+        std::cout << std::endl;
+
+        std::cout.flush();
       }
-      std::cout << std::endl;
+      epetraComm.Barrier();
     }
 
     std::vector<int_type*> NewColIndices(1);
@@ -128,24 +156,46 @@ Toperator( OriginalTypeRef orig )
     NewColMap_ = new Epetra_Map( NumGlobalColElements, NumMyColElements, NewColIndices[0], (int_type) OldColMap.IndexBase64(), OldColMap.Comm() );
 
     {
-      int numEntries = NewRowMap_.NumMyElements();
-      int * aux = NewRowMap_.MyGlobalElements();
-      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
-                << ": NewRowMap_ =";
-      for (int j(0); j < numEntries; ++j) {
-        std::cout << " " << aux[j];
+      std::cout.flush();
+      epetraComm.Barrier();
+      for (int p(0); p < numRanks; ++p) {
+        epetraComm.Barrier();
+        if (p != myRank) continue;
+
+        int numEntries = NewRowMap_.NumMyElements();
+        int * aux = NewRowMap_.MyGlobalElements();
+        std::cout << "rank " << myRank << " "
+                  << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                  << ": NewRowMap_ =";
+        for (int j(0); j < numEntries; ++j) {
+          std::cout << " " << aux[j];
+        }
+        std::cout << std::endl;
+
+        std::cout.flush();
       }
-      std::cout << std::endl;
+      epetraComm.Barrier();
     }
     {
-      int numEntries = NewColMap_->NumMyElements();
-      int * aux = NewColMap_->MyGlobalElements();
-      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
-                << ": NewColMap_ =";
-      for (int j(0); j < numEntries; ++j) {
-        std::cout << " " << aux[j];
+      std::cout.flush();
+      epetraComm.Barrier();
+      for (int p(0); p < numRanks; ++p) {
+        epetraComm.Barrier();
+        if (p != myRank) continue;
+
+        int numEntries = NewColMap_->NumMyElements();
+        int * aux = NewColMap_->MyGlobalElements();
+        std::cout << "rank " << myRank << " "
+                  << "In EpetraExt CrsMatrix_Reindex::Toperator()"
+                  << ": NewColMap_ =";
+        for (int j(0); j < numEntries; ++j) {
+          std::cout << " " << aux[j];
+        }
+        std::cout << std::endl;
+
+        std::cout.flush();
       }
-      std::cout << std::endl;
+      epetraComm.Barrier();
     }
 
     //intial construction of matrix 
@@ -155,25 +205,39 @@ Toperator( OriginalTypeRef orig )
     int * myIndices;
     double * myValues;
     int indicesCnt;
-    int numMyRows = NewMatrix->NumMyRows();
-    for( int i = 0; i < numMyRows; ++i )
-    {
-      orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
 
-      std::cout << "In EpetraExt CrsMatrix_Reindex::Toperator()"
-                << ", calling NewMatrix->InsertMyValues()"
-                << ": i = " << i
-                << ", indicesCnt = " << indicesCnt
-                << ", newMatrix_localValues =";
-      for (int j(0); j < indicesCnt; ++j) {
-        std::cout << " " << myValues[i];
+    {
+      std::cout.flush();
+      epetraComm.Barrier();
+      for (int p(0); p < numRanks; ++p) {
+        epetraComm.Barrier();
+        if (p != myRank) continue;
+
+        int numMyRows = NewMatrix->NumMyRows();
+        for( int i = 0; i < numMyRows; ++i )
+        {
+          orig.ExtractMyRowView( i, indicesCnt, myValues, myIndices );
+
+          std::cout << "rank " << myRank << " "
+                    << "In EpetraExt CrsMatrix_Reindex"
+                    << ", calling InsertMyValues()"
+                    << ": i = " << i
+                    << ", indicesCnt = " << indicesCnt
+                    << ", localValues =";
+          for (int j(0); j < indicesCnt; ++j) {
+            std::cout << " " << myValues[j];
+          }
+          std::cout << ", localIndices =";
+          for (int j(0); j < indicesCnt; ++j) {
+            std::cout << " " << myIndices[j];
+          }
+          std::cout << std::endl;
+          NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
+        }
+
+        std::cout.flush();
       }
-      std::cout << ", newMatrix_localIndices =";
-      for (int j(0); j < indicesCnt; ++j) {
-        std::cout << " " << myIndices[i];
-      }
-      std::cout << std::endl;
-      NewMatrix->InsertMyValues( i, indicesCnt, myValues, myIndices );
+      epetraComm.Barrier();
     }
 
     NewMatrix->FillComplete();

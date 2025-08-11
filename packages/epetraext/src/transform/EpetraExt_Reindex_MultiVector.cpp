@@ -75,6 +75,7 @@ operator()( OriginalTypeRef orig )
   return *NewMV;
 }
 
+#if 0 // AquiEEP
 MultiVector_Reindex::NewTypeRCP
 MultiVector_Reindex::transform(OriginalTypeRef orig)
 {
@@ -88,6 +89,7 @@ MultiVector_Reindex::transform(OriginalTypeRef orig)
 
   return Teuchos::rcp(new Epetra_MultiVector( View, NewRowMap_, MyValues[0], MyLDA, NumVectors ));
 }
+#endif
 
 } // namespace EpetraExt
 

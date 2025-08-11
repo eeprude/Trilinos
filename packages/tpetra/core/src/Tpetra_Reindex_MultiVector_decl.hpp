@@ -45,7 +45,7 @@ using OriginalType = typename ViewTransform< MultiVector<Scalar, LocalOrdinal, G
    */
   NewType operator()( OriginalType const & origMultiVector );
 
-  NewType transform( OriginalType origMultiVector ); // Aqui ???
+  //NewType transform( OriginalType origMultiVector ); // AquiEEP ???
 
 private:
   Teuchos::RCP< Map<LocalOrdinal, GlobalOrdinal, Node> const > newRowMap_;
