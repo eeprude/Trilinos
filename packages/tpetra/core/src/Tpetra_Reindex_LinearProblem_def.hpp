@@ -90,35 +90,6 @@ Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Or
   return this->newObj_;
 }
 
-#if 0 // AquiEEP
-template <class Scalar,
-          class LocalOrdinal,
-          class GlobalOrdinal,
-          class Node>
-bool 
-Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::fwd()
-{
-  using mv_t = MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
-
-  Teuchos::RCP<mv_t> oldRHS = this->origObj_->getRHS();
-  Teuchos::RCP<mv_t> oldLHS = this->origObj_->getLHS();
-
-  // Clean up x and b before creating new multivectors // Aqui
-  //delete (newObj_->GetLHS());
-  //delete (newObj_->GetRHS());
-
-  // Create new multivectors that view into the current LHS / RHS
-  Teuchos::RCP<mv_t> newLHS = ((*this->lhsTrans_)( oldLHS ));
-  Teuchos::RCP<mv_t> newRHS = ((*this->rhsTrans_)( oldRHS ));
-
-  // Set the new LHS / RHS
-  this->newObj_->setLHS( newLHS );
-  this->newObj_->setRHS( newRHS );
-
-  return true;
-}
-#endif
-
 //
 // Explicit instantiation macro
 //

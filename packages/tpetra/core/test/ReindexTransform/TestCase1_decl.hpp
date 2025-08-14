@@ -7,8 +7,8 @@
 // *****************************************************************************
 // @HEADER
 
-#ifndef TPETRA_CORE_TEST_SOLVER_MAP_TRANSFORM_TEST_CASE_1_DECL_HPP
-#define TPETRA_CORE_TEST_SOLVER_MAP_TRANSFORM_TEST_CASE_1_DECL_HPP
+#ifndef TPETRA_CORE_TEST_REINDEX_TRANSFORM_TEST_CASE_1_DECL_HPP
+#define TPETRA_CORE_TEST_REINDEX_TRANSFORM_TEST_CASE_1_DECL_HPP
 
 #include "TestCaseBase_decl.hpp"
 
@@ -29,8 +29,10 @@ public:
   ~TestCase1();
 
   bool checkTransformedProblem( Problem_t const * transformedProblem ) const;
+
+  bool checkAfterFwdRvs( Problem_t const * originalProblem ) const;
 };
 
 #include "TestCase1_def.hpp"
 
-#endif // TPETRA_CORE_TEST_SOLVER_MAP_TRANSFORM_TEST_CASE_1_DECL_HPP
+#endif // TPETRA_CORE_TEST_REINDEX_TRANSFORM_TEST_CASE_1_DECL_HPP

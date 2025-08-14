@@ -54,7 +54,7 @@ Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Orig
 {
   this->origObj_ = origMultiVector;
   assert( origMultiVector->getMap()->getLocalNumElements() == this->newRowMap_->getLocalNumElements() );
-  assert( origMultiVector->isConstantStride() == true ); // So it is valid to call origMultiVector->getStride()
+  assert( origMultiVector->isConstantStride() == true ); // So that it is valid to call origMultiVector->getStride()
 
   Teuchos::ArrayRCP<Teuchos::ArrayRCP<const Scalar> > origValues = origMultiVector->get2dView();
 
@@ -74,41 +74,17 @@ Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Orig
       tmpVec[k++] = origValues[v][i];
     }
   }
-
   Teuchos::ArrayView<Scalar const> valuesToInsert(tmpVec.data(), numEntries);
   
   using mv_t = MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
-  this->newObj_ = Teuchos::RCP<mv_t>( new mv_t( newRowMap_                       // const Teuchos::RCP<const map_type>& map,
-                                              , valuesToInsert                   // const Teuchos::ArrayView<const Scalar>& A,
-                                              , origMultiVector->getStride()     // const size_t LDA,
+  this->newObj_ = Teuchos::RCP<mv_t>( new mv_t( newRowMap_                       // const Teuchos::RCP<const map_type> & map
+                                              , valuesToInsert                   // const Teuchos::ArrayView<const Scalar> & A
+                                              , origMultiVector->getStride()     // const size_t LDA
                                               , origMultiVector->getNumVectors() // const size_t NumVectors
                                               ));
 
   return this->newObj_;
 }
-
-#if 0 // Aqui
-template <class Scalar,
-          class LocalOrdinal,
-          class GlobalOrdinal,
-          class Node>
-typename Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
-Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::transform( OriginalType origMultiVector )
-{
-  using mv_t = MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
-
-  throw std::runtime_error("Reindex_MultiVector<>::transform() is not implemented yet"); // Aqui
-  assert( origMultiVector->getMap()->getLocalNumElements() == this->newRowMap_->getLocalNumElements() );
-
-  std::vector<double*> MyValues(1);
-  int MyLDA;
-  int NumVectors = origMultiVector.NumVectors();
-  origMultiVector.ExtractView( &MyValues[0], &MyLDA );
-
-  return Teuchos::rcp(new mv_t( View, newRowMap_, MyValues[0], MyLDA, NumVectors ));
-  //return this->newObj_;
-}
-#endif
 
 //
 // Explicit instantiation macro
