@@ -160,8 +160,8 @@ class ProblemHandler():
   def doChallenge1(self):
     m = MueLu_XMLChallengeMode()
     m.numProcs      = 1      # number of processors
-    #m.globalNumDofs = 16641   # number of DOFs
-    #m.nDofsPerNode  = 1      # DOFs per node
+    m.globalNumDofs = 16641   # number of DOFs
+    m.nDofsPerNode  = 1      # DOFs per node
     m.solver        = "gmres"        # Belos solver
     m.tol           = 1e-12       # solver tolerance
     m.executable    = "./MueLu_TutorialDriver.exe" # executable
@@ -173,8 +173,8 @@ class ProblemHandler():
   def doChallenge2(self):
     m = MueLu_XMLChallengeMode()
     m.numProcs      = 1      # number of processors
-    #m.globalNumDofs = 7020   # number of DOFs
-    #m.nDofsPerNode  = 2      # DOFs per node
+    m.globalNumDofs = 7020   # number of DOFs
+    m.nDofsPerNode  = 2      # DOFs per node
     m.solver        = "cg"        # Belos solver
     m.tol           = 1e-12       # solver tolerance
     m.executable    = "./MueLu_TutorialDriver.exe" # executable
