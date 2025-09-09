@@ -169,7 +169,6 @@ bool
 TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckBeforeOrAfterTransform
   ( Problem_t   const * problem
   , std::string const & caseString
-  , bool              & reindexTransformationWouldChangeMatrixMaps
   ) const
 {
   bool result(true);
@@ -180,30 +179,7 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckBeforeOrAfterTra
   // *****************************************************************
   Matrix_t const * matrix = dynamic_cast<Matrix_t*>(problem->getMatrix().get());
 
-  size_t domainMap_localSize = matrix->getDomainMap()->getLocalNumElements();
-  size_t localNumDifferences(0);
-  for (size_t i(0); i < domainMap_localSize; ++i) {
-    if (matrix->getDomainMap()->getGlobalElement(i) != matrix->getColMap()->getGlobalElement(i)) {
-      localNumDifferences += 1;
-      break;
-    }
-  }
-  size_t globalNumDifferences(0);
-  Teuchos::reduceAll(*m_comm, Teuchos::REDUCE_SUM, 1, &localNumDifferences, &globalNumDifferences);
-  
-  reindexTransformationWouldChangeMatrixMaps = (globalNumDifferences != 0);
-
   if (false) { // Print detailed information
-    if (this->m_myRank == 0) {
-      std::cout.flush();
-      std::cout << caseString
-                << ", numRanks = " << this->m_numRanks
-                << ": reindexTransformationWouldChangeMatrixMaps = " << reindexTransformationWouldChangeMatrixMaps
-                << std::endl;
-      std::cout.flush();
-    }
-    this->m_comm->barrier();
-
     std::cout.flush();
     m_comm->barrier();
     for (int p(0); p < m_numRanks; ++p) {
@@ -448,10 +424,8 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckTransformedProbl
 {
   bool result(true);
 
-  bool reindexTransformationWouldChangeMatrixMaps(false);
-  result = baseCheckBeforeOrAfterTransform( transformedProblem                           // Input
-                                          , "After transform"                            // Input
-                                          , reindexTransformationWouldChangeMatrixMaps // Output
+  result = baseCheckBeforeOrAfterTransform( transformedProblem // Input
+                                          , "After transform"  // Input
                                           );
   if (result == false) return result;
 
@@ -460,7 +434,6 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckTransformedProbl
     std::cout << "After transform"
               << ", numRanks = " << this->m_numRanks
               << ", m_matrixMapsShallChange = " << m_matrixMapsShallChange
-              << ": reindexTransformationWouldChangeMatrixMaps = " << reindexTransformationWouldChangeMatrixMaps
               << std::endl;
     std::cout.flush();
   }
@@ -469,15 +442,6 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckTransformedProbl
   // *****************************************************************
   // Check the matrix in 'transformedProblem'
   // *****************************************************************
-  if (reindexTransformationWouldChangeMatrixMaps == true) {
-    std::stringstream msg;
-    msg << "In TestCaseBase::baseCheckTransformedProblem()"
-        << ", numRanks = " << this->m_numRanks
-        << ": reindexTransformationWouldChangeMatrixMaps should be 'false'"
-        << std::endl;
-    throw std::runtime_error( msg.str() );
-  }
-
   if (m_matrixMapsShallChange == false) {
     // Both matrices (before and after the Reindex transform) should have
     // equal maps, allowing us to call the CrsMatrix<>::add() method for
@@ -511,10 +475,8 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckAfterFwdRvs( Pro
 {
   bool result(true);
 
-  bool reindexTransformationWouldChangeMatrixMaps(false);
-  result = baseCheckBeforeOrAfterTransform( m_linearProblem.get()                      // Input
-                                          , "After FwdRvs"                             // Input
-                                          , reindexTransformationWouldChangeMatrixMaps // Output
+  result = baseCheckBeforeOrAfterTransform( m_linearProblem.get() // Input
+                                          , "After FwdRvs"        // Input
                                           );
   if (result == false) return result;
 

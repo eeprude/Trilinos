@@ -63,13 +63,14 @@ Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Origin
 
   assert( origMatrix->getRowMap()->getLocalNumElements() == newRowMap_->getLocalNumElements() );
 
-  // AquiEEP orig.OperatorDomainMap()
   if ((origMatrix->getDomainMap()->getGlobalNumElements() == 0) &&
       (origMatrix->getRowMap()->getGlobalNumElements()    == 0)) {
     // Construct a zero matrix as a placeholder, don't do reindexing analysis.
+    std::cout << "In Reindex_CrsMatrix<>::operator(), no reindex performed" << std::endl;
     this->newObj_ = Teuchos::rcp<cm_t>( new cm_t(origMatrix->getRowMap(), origMatrix->getColMap(), 0) );
   }
   else {
+    std::cout << "In Reindex_CrsMatrix<>::operator(), performing reindex" << std::endl;
     using map_t = Map   <               LocalOrdinal, GlobalOrdinal, Node>;
     using imp_t = Import<               LocalOrdinal, GlobalOrdinal, Node>;
     using v_t   = Vector<GlobalOrdinal, LocalOrdinal, GlobalOrdinal, Node>;
@@ -82,7 +83,7 @@ Reindex_CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Origin
                      , origDomainMap_localSize
                      , 0
                      , origMatrix->getDomainMap()->getComm()
-                      );
+                     );
       for (size_t i(0); i < origDomainMap_localSize; ++i) {
         cols.replaceLocalValue(i, tmpColMap.getGlobalElement(i));
       }

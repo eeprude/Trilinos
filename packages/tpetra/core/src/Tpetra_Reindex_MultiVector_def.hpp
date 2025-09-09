@@ -52,6 +52,8 @@ template <class Scalar,
 typename Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
 Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & origMultiVector )
 {
+  std::cout << "In Reindex_MultiVector<>::operator(), performing reindex" << std::endl;
+
   this->origObj_ = origMultiVector;
   assert( origMultiVector->getMap()->getLocalNumElements() == this->newRowMap_->getLocalNumElements() );
   assert( origMultiVector->isConstantStride() == true ); // So that it is valid to call origMultiVector->getStride()

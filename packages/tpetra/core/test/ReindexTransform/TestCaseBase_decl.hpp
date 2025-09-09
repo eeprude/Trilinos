@@ -21,7 +21,6 @@ public:
   using MultiVector_t = Tpetra::MultiVector  <Scalar_t, LocalId_t, GlobalId_t, Node_t>;
   using Matrix_t      = Tpetra::CrsMatrix    <Scalar_t, LocalId_t, GlobalId_t, Node_t>;
   using Problem_t     = Tpetra::LinearProblem<Scalar_t, LocalId_t, GlobalId_t, Node_t>;
-  using ColValPair_t  = std::pair<LocalId_t /*localColIndex*/, Scalar_t>;
 
   TestCaseBase() = delete;
 
@@ -55,7 +54,6 @@ protected:
 
   bool baseCheckBeforeOrAfterTransform( Problem_t   const * problem
                                       , std::string const & caseString
-                                      , bool              & reindexTransformationWouldChangeMatrixMaps
                                       ) const;
 
   bool baseCheckTransformedProblem( Problem_t const * transformedProblem ) const;

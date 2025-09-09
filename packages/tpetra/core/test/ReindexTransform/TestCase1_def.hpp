@@ -32,10 +32,11 @@ TestCase1<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCase1( Teuchos::RCP<Teuc
                                     , "rhs1.txt"
                                     );
 
-  this->baseCheckBeforeOrAfterTransform( this->m_linearProblem.get()   // Input
-                                       , "Case1_original"              // Input
-                                       , this->m_matrixMapsShallChange // Output
+  this->baseCheckBeforeOrAfterTransform( this->m_linearProblem.get() // Input
+                                       , "Case1_original"            // Input
                                        );
+
+  this->m_matrixMapsShallChange = false;
 }
 
 template< class Scalar_t, class LocalId_t, class GlobalId_t, class Node_t > 
