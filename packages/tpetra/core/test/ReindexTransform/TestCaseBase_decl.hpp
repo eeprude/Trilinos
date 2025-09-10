@@ -60,6 +60,10 @@ protected:
 
   bool baseCheckAfterFwdRvs( Problem_t const * originalProblem ) const;
 
+  bool baseCheckMapsAreDifferent( Matrix_t const & mat1
+                                , Matrix_t const & mat2
+                                ) const;
+
   bool baseCheckMatricesAreEqual( Matrix_t const & mat1
                                 , Matrix_t const & mat2
                                 ) const;

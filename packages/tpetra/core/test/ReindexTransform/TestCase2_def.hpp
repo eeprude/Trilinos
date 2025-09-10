@@ -29,7 +29,7 @@ TestCase2<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCase2( Teuchos::RCP<Teuc
                                                                                    : std::vector<Scalar_t>{1.000000075938e+00, 1.000000075938e+00})
                                                          )
 {
-  if (comm->getSize() == 2) {
+  if (this->m_numRanks == 2) {
     // ****************************************************************
     // Instantiate and populate the matrix
     // ****************************************************************

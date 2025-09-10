@@ -338,14 +338,17 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckTransformedProbl
   // *****************************************************************
   // Check the matrix in 'transformedProblem'
   // *****************************************************************
-  if (m_mapsShallChange == false) {
+  Matrix_t * tmpPtr1 = dynamic_cast<Matrix_t *>( m_linearProblem->getMatrix().get() );
+  Matrix_t * tmpPtr2 = dynamic_cast<Matrix_t *>( transformedProblem->getMatrix().get() );
+  if (m_mapsShallChange) {
+    result = this->baseCheckMapsAreDifferent(*tmpPtr1, *tmpPtr2);
+    if (result == false) return result;
+  }
+  else {
     // Both matrices (before and after the Reindex transform) should have
     // equal maps, allowing us to call the CrsMatrix<>::add() method for
     // calculating (i) the difference between the matrices, and (ii) the
     // Frobenius norm of such difference.
-    Matrix_t * tmpPtr1 = dynamic_cast<Matrix_t *>( m_linearProblem->getMatrix().get() );
-    Matrix_t * tmpPtr2 = dynamic_cast<Matrix_t *>( transformedProblem->getMatrix().get() );
-
     result = this->baseCheckMatricesAreEqual(*tmpPtr1, *tmpPtr2);
     if (result == false) return result;
   }
@@ -397,6 +400,30 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckAfterFwdRvs( Pro
   // *****************************************************************
 
   // No extra checks beyond the checks performed by 'baseCheckBeforeOrAfterTransform()'
+
+  return result;
+}
+
+template< class Scalar_t, class LocalId_t, class GlobalId_t, class Node_t > 
+bool
+TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckMapsAreDifferent( Matrix_t const & mat1
+                                                                                , Matrix_t const & mat2
+                                                                                ) const
+{
+  bool result(true);
+
+  if (( *(mat1.getMap())       == *(mat2.getMap())       ) &&
+      ( *(mat1.getRowMap())    == *(mat2.getRowMap())    ) &&
+      ( *(mat1.getColMap())    == *(mat2.getColMap())    ) &&
+      ( *(mat1.getDomainMap()) == *(mat2.getDomainMap()) ) &&
+      ( *(mat1.getRangeMap())  == *(mat2.getRangeMap())  )) {
+    std::stringstream msg;
+    msg << "In TestCaseBase::baseCheckMapsAreDifferent()"
+        << ", numRanks = " << this->m_numRanks
+        << ": matrices should have at least one different map"
+        << std::endl;
+    throw std::runtime_error( msg.str() );
+  }
 
   return result;
 }
