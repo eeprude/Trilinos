@@ -92,7 +92,7 @@ protected:
   Teuchos::RCP< MultiVector_t >    m_lhsRCP;
   Teuchos::RCP< MultiVector_t >    m_rhsRCP;
   std::unique_ptr< Problem_t >     m_linearProblem;
-  bool                             m_matrixMapsShallChange;
+  bool                             m_mapsShallChange;
 };
 
 #include "TestCaseBase_def.hpp"

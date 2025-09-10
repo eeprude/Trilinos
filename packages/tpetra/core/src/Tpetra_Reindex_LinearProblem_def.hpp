@@ -21,7 +21,6 @@
 /// include "Tpetra_Reindex_LinearProblem_decl.hpp".
 
 #include <Tpetra_Reindex_LinearProblem_decl.hpp>
-#include <Tpetra_Reindex_Debug.hpp>
 
 namespace Tpetra {
 
@@ -56,7 +55,6 @@ template <class Scalar,
 typename Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
 Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & origProblem )
 {
-  std::cout << "Entering Tpetra Reindex_LinearProblem<>::operator()..." << std::endl;
   using map_t = Map          <        LocalOrdinal, GlobalOrdinal, Node>;
   using mv_t  = MultiVector  <Scalar, LocalOrdinal, GlobalOrdinal, Node>;
   using cm_t  = CrsMatrix    <Scalar, LocalOrdinal, GlobalOrdinal, Node>;
@@ -70,13 +68,8 @@ Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Or
   Teuchos::RCP<mv_t>        origLHS    = origProblem->getLHS();
   Teuchos::RCP<map_t const> origRowMap = origMatrix->getMap();
 
-  printCrsMatrixMaps<Scalar, LocalOrdinal, GlobalOrdinal, Node>( *origMatrix, "KEY_origMatrix" );
-  printMultiVectorInfo<Scalar, LocalOrdinal, GlobalOrdinal, Node>( *origLHS, "KEY_origLHS" );
-  printMultiVectorInfo<Scalar, LocalOrdinal, GlobalOrdinal, Node>( *origRHS, "KEY_origRHS" );
-  
   // If no new map has been passed in, create one
   if (newRowMap_.get() == nullptr) {
-    std::cout << "In Tpetra Reindex_LinearProblem<>::operator(): null newRowMap_ situation" << std::endl;
     newRowMap_ = Teuchos::rcp<map_t const>( new map_t(origRowMap->getGlobalNumElements(), origRowMap->getLocalNumElements(), 0, origRowMap->getComm()) );
   }
 
@@ -87,20 +80,11 @@ Reindex_LinearProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Or
   lhsTrans_ = Teuchos::rcp<r_mv_t>( new r_mv_t( newRowMap_ ) );
   rhsTrans_ = Teuchos::rcp<r_mv_t>( new r_mv_t( newRowMap_ ) );
 
-  std::cout << "In Reindex_LinearProblem<>::operator(), calling Reindex_CrsMatrix::operator()..." << std::endl;
   Teuchos::RCP<cm_t> newMatrix = ((*matTrans_)( origMatrix ));
-  std::cout << "In Reindex_LinearProblem<>::operator(), calling Reindex_MultiVector::operator() for lhs..." << std::endl;
   Teuchos::RCP<mv_t> newLHS    = ((*lhsTrans_)( origLHS    ));
-  std::cout << "In Reindex_LinearProblem<>::operator(), calling Reindex_MultiVector::operator() for rhs..." << std::endl;
   Teuchos::RCP<mv_t> newRHS    = ((*rhsTrans_)( origRHS    ));
 
-  printCrsMatrixMaps<Scalar, LocalOrdinal, GlobalOrdinal, Node>( *newMatrix, "KEY_newMatrix" );
-  printMultiVectorInfo<Scalar, LocalOrdinal, GlobalOrdinal, Node>( *newLHS, "KEY_newLHS" );
-  printMultiVectorInfo<Scalar, LocalOrdinal, GlobalOrdinal, Node>( *newRHS, "KEY_newRHS" );
-
   this->newObj_ = Teuchos::rcp<lp_t>( new lp_t(newMatrix, newLHS, newRHS) );
-
-  std::cout << "Leaving Tpetra Reindex_LinearProblem<>::operator()..." << std::endl;
 
   return this->newObj_;
 }

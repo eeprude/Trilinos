@@ -36,7 +36,7 @@ TestCase1<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCase1( Teuchos::RCP<Teuc
                                        , "Case1_original"            // Input
                                        );
 
-  this->m_matrixMapsShallChange = false;
+  this->m_mapsShallChange = false;
 }
 
 template< class Scalar_t, class LocalId_t, class GlobalId_t, class Node_t > 

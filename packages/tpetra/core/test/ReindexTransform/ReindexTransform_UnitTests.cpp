@@ -123,9 +123,9 @@ namespace {
     }
   }
 
-//            TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ReindexTransform, TestCase_1, LO, GO, NODE )
 
-#define UNIT_TEST_GROUP( LO, GO, NODE )					\
+#define UNIT_TEST_GROUP( LO, GO, NODE )	\
+            TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ReindexTransform, TestCase_1, LO, GO, NODE ) \
             TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ReindexTransform, TestCase_2, LO, GO, NODE )
 
   TPETRA_ETI_MANGLING_TYPEDEFS()

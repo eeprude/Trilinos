@@ -52,8 +52,6 @@ template <class Scalar,
 typename Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NewType
 Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( OriginalType const & origMultiVector )
 {
-  std::cout << "In Reindex_MultiVector<>::operator(), performing reindex" << std::endl;
-
   this->origObj_ = origMultiVector;
   assert( origMultiVector->getMap()->getLocalNumElements() == this->newRowMap_->getLocalNumElements() );
   assert( origMultiVector->isConstantStride() == true ); // So that it is valid to call origMultiVector->getStride()
@@ -61,13 +59,8 @@ Reindex_MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::operator()( Orig
   Teuchos::ArrayRCP<Teuchos::ArrayRCP<const Scalar> > origValues = origMultiVector->get2dView();
 
   using size_type = typename Teuchos::ArrayRCP<Scalar>::size_type;
-  size_type numEntries(0);
-  for (size_type v(0); v < origValues.size(); ++v) {
-    if (origValues[v].size() != origValues[0].size()) {
-      throw std::runtime_error("In Reindex_MultiVector<>::operator(): invalid origValues[v].size() for v = " + std::to_string(v));
-    }
-    numEntries += origValues[v].size();
-  }
+
+  size_type numEntries(origValues.size() * origValues[0].size());
 
   std::vector<Scalar> tmpVec(numEntries);
   size_t k(0);

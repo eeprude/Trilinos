@@ -25,30 +25,30 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCaseBase( Teuchos::RC
                                                                    , std::vector<Scalar_t> const & lhsNorms2
                                                                    , std::vector<Scalar_t> const & rhsNorms2
                                                                    )
-  : m_comm                 ( comm )
-  , m_numRanks             ( m_comm->getSize() )
-  , m_myRank               ( m_comm->getRank() )
-  , m_globalNumRows        ( globalNumRows )
-  , m_globalNumCols        ( globalNumCols )
-  , m_rowIndexBase         ( rowIndexBase )
-  , m_colIndexBase         ( colIndexBase )
-  , m_maxNnzPerRow         ( maxNnzPerRow )
-  , m_globalNumNnz         ( globalNumNnz )
-  , m_frobNorm             ( frobNorm )
-  , m_lhsNorms2            ( lhsNorms2 )
-  , m_rhsNorms2            ( rhsNorms2 )
-  , m_rowMap               ( nullptr )
-  , m_colMap               ( nullptr )
-  , m_domainMap            ( nullptr )
-  , m_rangeMap             ( nullptr )
-  , m_matrix               ( nullptr )
-  , m_lhs                  ( nullptr )
-  , m_rhs                  ( nullptr )
-  , m_matrixRCP            ( Teuchos::null )
-  , m_lhsRCP               ( Teuchos::null )
-  , m_rhsRCP               ( Teuchos::null )
-  , m_linearProblem        ( nullptr )
-  , m_matrixMapsShallChange( false )
+  : m_comm           ( comm )
+  , m_numRanks       ( m_comm->getSize() )
+  , m_myRank         ( m_comm->getRank() )
+  , m_globalNumRows  ( globalNumRows )
+  , m_globalNumCols  ( globalNumCols )
+  , m_rowIndexBase   ( rowIndexBase )
+  , m_colIndexBase   ( colIndexBase )
+  , m_maxNnzPerRow   ( maxNnzPerRow )
+  , m_globalNumNnz   ( globalNumNnz )
+  , m_frobNorm       ( frobNorm )
+  , m_lhsNorms2      ( lhsNorms2 )
+  , m_rhsNorms2      ( rhsNorms2 )
+  , m_rowMap         ( nullptr )
+  , m_colMap         ( nullptr )
+  , m_domainMap      ( nullptr )
+  , m_rangeMap       ( nullptr )
+  , m_matrix         ( nullptr )
+  , m_lhs            ( nullptr )
+  , m_rhs            ( nullptr )
+  , m_matrixRCP      ( Teuchos::null )
+  , m_lhsRCP         ( Teuchos::null )
+  , m_rhsRCP         ( Teuchos::null )
+  , m_linearProblem  ( nullptr )
+  , m_mapsShallChange( false )
 {
   if (m_lhsNorms2.size() != m_rhsNorms2.size()) {
     std::stringstream msg;
@@ -97,50 +97,6 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseInstantiateLinearProb
                                                                                               );
   m_lhs = std::unique_ptr<MultiVector_t>( new MultiVector_t(*lhs) );
   m_lhsRCP = Teuchos::rcp<MultiVector_t>(m_lhs.get(), false);
-  if (false) { // Print detailed information
-    if (this->m_numRanks ==1) {
-      {
-        size_t numVectors(m_lhs->getNumVectors());
-        std::vector<Scalar_t> allNorms( numVectors );
-        Teuchos::ArrayView<Scalar_t> allNorms2( allNorms.data(), allNorms.size() );
-        m_lhs->norm2(allNorms2);
-        std::cout << "lhs norms2 are:";
-        for (size_t v(0); v < numVectors; ++v) {
-          std::cout << " " << std::scientific << std::setprecision(12) << allNorms2[v];
-        }
-        std::cout << std::endl;
-      }
-
-      Teuchos::ArrayRCP<Scalar_t const> lhsView = m_lhs->get1dView();
-      for (size_t v(0); v < m_lhs->getNumVectors(); ++v) {
-        for (size_t i(0); i < m_lhs->getLocalLength(); ++i) {
-          std::cout << "m_lhs(v+1,i+1,value) = " << v+1 << " " << i+1 << " " << std::scientific << std::setprecision(12) << lhsView[v * m_lhs->getLocalLength() + i] << std::endl;
-        }
-      }
-
-      MultiVector_t tmpRhs(m_lhs->getMap(), m_lhs->getNumVectors(), true /* zeroOut */);
-      m_matrix->apply(*m_lhs, tmpRhs);
-
-      {
-        size_t numVectors(tmpRhs.getNumVectors());
-        std::vector<Scalar_t> allNorms( numVectors );
-        Teuchos::ArrayView<Scalar_t> allNorms2( allNorms.data(), allNorms.size() );
-        tmpRhs.norm2(allNorms2);
-        std::cout << "tmpRhs norms2 are:";
-        for (size_t v(0); v < numVectors; ++v) {
-          std::cout << " " << std::scientific << std::setprecision(12) << allNorms2[v];
-        }
-        std::cout << std::endl;
-      }
-
-      Teuchos::ArrayRCP<Scalar_t const> rhsView = tmpRhs.get1dView();
-      for (size_t v(0); v < tmpRhs.getNumVectors(); ++v) {
-        for (size_t i(0); i < tmpRhs.getLocalLength(); ++i) {
-          std::cout << "tmpRhs(v+1,i+1,value) = " << v+1 << " " << i+1 << " " << std::scientific << std::setprecision(12) << rhsView[v * tmpRhs.getLocalLength() + i] << std::endl;
-        }
-      }
-    }
-  }
 
   // Create rhs
   Teuchos::RCP<MultiVector_t> rhs = Tpetra::MatrixMarket::Reader<MultiVector_t>::readDenseFile( rhsInputFileName // const std::string            & filename
@@ -179,58 +135,6 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckBeforeOrAfterTra
   // *****************************************************************
   Matrix_t const * matrix = dynamic_cast<Matrix_t*>(problem->getMatrix().get());
 
-  if (false) { // Print detailed information
-    std::cout.flush();
-    m_comm->barrier();
-    for (int p(0); p < m_numRanks; ++p) {
-      m_comm->barrier();
-      if (p != m_myRank) continue;
-
-      std::cout.flush();
-
-      std::cout << caseString
-                << ": rowMap()->globalNumElems = " << matrix->getRowMap()->getGlobalNumElements()
-                << ", localNumElems = " << matrix->getRowMap()->getLocalNumElements()
-                << "; globalIndices =";
-      for (size_t i(0); i < matrix->getRowMap()->getLocalNumElements(); ++i) {
-        std::cout << " " << matrix->getRowMap()->getGlobalElement(i);
-      }
-      std::cout << std::endl;
-
-      std::cout << caseString
-                << ": colMap()->globalNumElems = " << matrix->getColMap()->getGlobalNumElements()
-                << ", localNumElems = " << matrix->getColMap()->getLocalNumElements()
-                << "; globalIndices =";
-      for (size_t i(0); i < matrix->getColMap()->getLocalNumElements(); ++i) {
-        std::cout << " " << matrix->getColMap()->getGlobalElement(i);
-      }
-      std::cout << std::endl;
-
-      std::cout << caseString
-                << ": domainMap()->globalNumElems = " << matrix->getDomainMap()->getGlobalNumElements()
-                << ", localNumElems = " << matrix->getDomainMap()->getLocalNumElements()
-                << "; globalIndices =";
-      for (size_t i(0); i < matrix->getDomainMap()->getLocalNumElements(); ++i) {
-        std::cout << " " << matrix->getDomainMap()->getGlobalElement(i);
-      }
-      std::cout << std::endl;
-
-      std::cout << caseString
-                << ": rangeMap()->globalNumElems = " << matrix->getRangeMap()->getGlobalNumElements()
-                << ", localNumElems = " << matrix->getRangeMap()->getLocalNumElements()
-                << "; globalIndices =";
-      for (size_t i(0); i < matrix->getRangeMap()->getLocalNumElements(); ++i) {
-        std::cout << " " << matrix->getRangeMap()->getGlobalElement(i);
-      }
-      std::cout << std::endl;
-
-      std::cout.flush();
-    }
-    m_comm->barrier();
-  }
-
-  std::cout << "Aqui 001" << std::endl;
-  
   // Check globalNumRows
   if (matrix->getGlobalNumRows() != m_globalNumRows) {
     std::stringstream msg;
@@ -286,8 +190,6 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckBeforeOrAfterTra
       throw std::runtime_error( msg.str() );
     }
   }
-
-  std::cout << "Aqui 002" << std::endl;
 
   // *****************************************************************
   // Check the lhs multivector
@@ -433,20 +335,10 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckTransformedProbl
                                           );
   if (result == false) return result;
 
-  if (this->m_myRank == 0) {
-    std::cout.flush();
-    std::cout << "After transform"
-              << ", numRanks = " << this->m_numRanks
-              << ", m_matrixMapsShallChange = " << m_matrixMapsShallChange
-              << std::endl;
-    std::cout.flush();
-  }
-  this->m_comm->barrier();
-
   // *****************************************************************
   // Check the matrix in 'transformedProblem'
   // *****************************************************************
-  if (m_matrixMapsShallChange == false) {
+  if (m_mapsShallChange == false) {
     // Both matrices (before and after the Reindex transform) should have
     // equal maps, allowing us to call the CrsMatrix<>::add() method for
     // calculating (i) the difference between the matrices, and (ii) the
