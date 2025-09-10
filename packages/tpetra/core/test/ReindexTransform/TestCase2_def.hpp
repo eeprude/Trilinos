@@ -23,16 +23,16 @@ TestCase2<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCase2( Teuchos::RCP<Teuc
                                                          , 5  // maxNnzPerRow
                                                          , 43 // globalNumNnz
                                                          , 4.940647893865e+00                       // frobNorm
-                                                         , {1.000000073665e+00, 1.000000073665e+00} // lhsNorms2
-                                                         , {1.000000075938e+00, 1.000000075938e+00} // rhsNorms2
+                                                         , {0., 0.} // {1.000000073665e+00, 1.000000073665e+00} // lhsNorms2
+                                                         , {0., 0.} // {1.000000075938e+00, 1.000000075938e+00} // rhsNorms2
                                                          )
 {
+  std::cout << "Entering TestCase2<>::constructor(), comm->getSize() = " << comm->getSize() << std::endl;
   if (comm->getSize() == 2) {
     std::vector< std::vector<GlobalId_t> > globalRowIndicesPerRank_beforeTransform;
     std::vector< std::vector<GlobalId_t> > globalColIndicesPerRank_beforeTransform;
     std::vector< std::vector<GlobalId_t> > globalDomainIndicesPerRank_beforeTransform;
     std::vector< std::vector<GlobalId_t> > globalRangeIndicesPerRank_beforeTransform;
-
     std::vector< std::vector< std::vector< ColValPair_t > > > colValuePairsPerRankAndLocalRow;
     this->prepareDataToCreateMatrix( globalRowIndicesPerRank_beforeTransform
                                    , globalColIndicesPerRank_beforeTransform
@@ -55,7 +55,7 @@ TestCase2<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCase2( Teuchos::RCP<Teuc
           << std::endl;
       throw std::runtime_error( msg.str() );
     }
-    //std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    //std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++01" << std::endl;
 
     this->m_rowMap = std::unique_ptr<Map_t>( new Map_t( this->m_globalNumRows
                                                       , globalRowIndicesPerRank_beforeTransform[this->m_myRank].data()
@@ -78,12 +78,26 @@ TestCase2<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCase2( Teuchos::RCP<Teuc
 
     std::vector<Scalar_t>   tpetraValues (this->m_maxNnzPerRow);
     std::vector<GlobalId_t> tpetraIndices(this->m_maxNnzPerRow);
+#if 0
+    this->m_comm->barrier();
+
+    std::cout.flush();
+    this->m_comm->barrier();
+    for (int p(0); p < this->m_numRanks; ++p) {
+      this->m_comm->barrier();
+      if (p != this->m_myRank) continue;
+
+      std::cout.flush();
+#endif
+
     for (size_t i(0); i < globalRowIndicesPerRank_beforeTransform[this->m_myRank].size(); ++i) {
       int globalRow = globalRowIndicesPerRank_beforeTransform[this->m_myRank][i];
       size_t numEntries = colValuePairsPerRankAndLocalRow[this->m_myRank][i].size();
+      //std::cout << "p=" << p << ", calling m_matrix->insertGlobalValues() for i = " << i << ", numEntries = " << numEntries << std::endl;
       for (size_t j(0); j < numEntries; ++j) {
         tpetraValues [j] = colValuePairsPerRankAndLocalRow[this->m_myRank][i][j].second;
         tpetraIndices[j] = globalColIndicesPerRank_beforeTransform[this->m_myRank][ colValuePairsPerRankAndLocalRow[this->m_myRank][i][j].first ];
+        //std::cout << "p,i,j,val,index=" << p << ", " << i << ", " << j << ", " << tpetraValues[j] << ", " << tpetraIndices[j] << std::endl;
       }
 
       this->m_matrix->insertGlobalValues( globalRow
@@ -91,9 +105,45 @@ TestCase2<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCase2( Teuchos::RCP<Teuc
                                         , tpetraValues.data()
                                         , tpetraIndices.data()
                                         );
+      //std::cout << "p=" << p << ", returned from m_matrix->insertGlobalValues() for i = " << i << std::endl;
     }
 
+#if 0
+    std::cout.flush();
+
+    } // for p
+    this->m_comm->barrier();
+#endif
+
     this->m_matrix->fillComplete();
+    this->m_matrixRCP = Teuchos::rcp<Matrix_t>(this->m_matrix.get(), false);
+
+    size_t epetraNumVectors = 2;
+
+    this->m_lhs = std::unique_ptr<MultiVector_t>( new MultiVector_t( Teuchos::rcp<Map_t>(this->m_rowMap.get(), false)
+                                                                   , epetraNumVectors
+                                                                   , true /* zeroOut */
+                                                                   ));
+    this->m_lhsRCP = Teuchos::rcp<MultiVector_t>(this->m_lhs.get(), false);
+
+    this->m_rhs = std::unique_ptr<MultiVector_t>( new MultiVector_t( Teuchos::rcp<Map_t>(this->m_rowMap.get(), false)
+                                                                   , epetraNumVectors
+                                                                   , true /* zeroOut */
+                                                                   ));
+    this->m_rhsRCP = Teuchos::rcp<MultiVector_t>(this->m_rhs.get(), false);
+
+#if 0
+    Teuchos::ArrayRCP<scalar_t> tmpView = m_tpetraMultiVector->get1dViewNonConst();
+    for (size_t v(0); v < epetraNumVectors; ++v) {
+      double * const & myValues = epetraMultiVector[v];
+      for (size_t i(0); i < epetraMultiVector.MyLength(); ++i) {
+        tmpView[v * epetraMultiVector.MyLength() + i] = myValues[i];
+      }
+    }
+#endif
+
+    // Create linear problem
+    this->m_linearProblem = std::unique_ptr<Problem_t>(new Problem_t(this->m_matrixRCP, this->m_lhsRCP, this->m_rhsRCP));
 
     this->m_matrixMapsShallChange = true;
   }
@@ -104,10 +154,13 @@ TestCase2<Scalar_t, LocalId_t, GlobalId_t, Node_t>::TestCase2( Teuchos::RCP<Teuc
                                       );
     this->m_matrixMapsShallChange = false;
   }
+  std::cout << "In TestCase2<>::constructor()" << std::endl;
 
   this->baseCheckBeforeOrAfterTransform( this->m_linearProblem.get() // Input
                                        , "Case2_original"            // Input
                                        );
+
+  std::cout << "Leaving TestCase2<>::constructor()" << std::endl;
 }
 
 template< class Scalar_t, class LocalId_t, class GlobalId_t, class Node_t > 
@@ -156,14 +209,10 @@ TestCase2<Scalar_t, LocalId_t, GlobalId_t, Node_t>::prepareDataToCreateMatrix
     //RangeMap  11 12 13 14 15 16 17 18
 
     globalRowIndicesPerRank[0] = {0, 1, 2, 3, 4, 5, 6, 7, 9};
-    globalRowIndicesPerRank[1] = {0, 1, 2, 3, 4, 5, 6, 7, 9, 12, 13, 11};
-    globalRowIndicesPerRank[2] = {0, 1, 2, 3, 4, 5, 6, 7, 9};
-    globalRowIndicesPerRank[3] = {0, 1, 2, 3, 4, 5, 6, 7, 9};
+    globalRowIndicesPerRank[1] = {11, 12, 13, 14, 15, 16, 17, 18};
 
-    globalColIndicesPerRank[0] = {11, 12, 13, 14, 15, 16, 17, 18};
+    globalColIndicesPerRank[0] = {0, 1, 2, 3, 4, 5, 6, 7, 9, 12, 13, 11};
     globalColIndicesPerRank[1] = {11, 12, 13, 14, 15, 16, 17, 18, 9, 7};
-    globalColIndicesPerRank[2] = {11, 12, 13, 14, 15, 16, 17, 18};
-    globalColIndicesPerRank[3] = {11, 12, 13, 14, 15, 16, 17, 18};
 
     for (int iRank(0); iRank < this->m_numRanks; ++iRank) {
       colValuePairsPerRankAndLocalRow[iRank].resize( globalRowIndicesPerRank[iRank].size() );
@@ -273,6 +322,52 @@ TestCase2<Scalar_t, LocalId_t, GlobalId_t, Node_t>::prepareDataToCreateMatrix
 
   globalDomainIndicesPerRank = globalRowIndicesPerRank;
   globalRangeIndicesPerRank  = globalRowIndicesPerRank;
+
+#if 0
+Rank 0
+tlpw_fromEpetra_afterSolverMapFwd_LHS: globalLength = 17, localLength = 9, numVectors = 1
+m_tpetraMultiVector(v,i,value) = 0,0,0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,1,0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,2,0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,3,0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,4,0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,5,0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,6,0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,7,0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,8,0.000000000000e+00
+tlpw_fromEpetra_afterSolverMapFwd_RHS: globalLength = 17, localLength = 9, numVectors = 1
+m_tpetraMultiVector(v,i,value) = 0,0,-0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,1,-0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,2,-0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,3,-0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,4,-0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,5,-0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,6,-0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,7,-0.000000000000e+00
+m_tpetraMultiVector(v,i,value) = 0,8,-1.000000000000e+00
+  
+Rank 1
+tlpw_fromEpetra_afterSolverMapFwd_LHS: globalLength = 17, localLength = 8, numVectors = 1
+m_tpetraMultiVector(v,i,value) = 0,0,0
+m_tpetraMultiVector(v,i,value) = 0,1,0
+m_tpetraMultiVector(v,i,value) = 0,2,0
+m_tpetraMultiVector(v,i,value) = 0,3,0
+m_tpetraMultiVector(v,i,value) = 0,4,0
+m_tpetraMultiVector(v,i,value) = 0,5,0
+m_tpetraMultiVector(v,i,value) = 0,6,0
+m_tpetraMultiVector(v,i,value) = 0,7,0
+tlpw_fromEpetra_afterSolverMapFwd_RHS: globalLength = 17, localLength = 8, numVectors = 1
+m_tpetraMultiVector(v,i,value) = 0,0,-2.31539e-05
+m_tpetraMultiVector(v,i,value) = 0,1,-0
+m_tpetraMultiVector(v,i,value) = 0,2,-0.000382438
+m_tpetraMultiVector(v,i,value) = 0,3,-0
+m_tpetraMultiVector(v,i,value) = 0,4,-0
+m_tpetraMultiVector(v,i,value) = 0,5,2.31539e-05
+m_tpetraMultiVector(v,i,value) = 0,6,-0
+m_tpetraMultiVector(v,i,value) = 0,7,-0
+
+#endif
+
 }
 
 #endif // TPETRA_CORE_TEST_REINDEX_TRANSFORM_TEST_CASE_2_DEF_HPP

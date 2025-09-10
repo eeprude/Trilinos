@@ -229,6 +229,8 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckBeforeOrAfterTra
     m_comm->barrier();
   }
 
+  std::cout << "Aqui 001" << std::endl;
+  
   // Check globalNumRows
   if (matrix->getGlobalNumRows() != m_globalNumRows) {
     std::stringstream msg;
@@ -284,6 +286,8 @@ TestCaseBase<Scalar_t, LocalId_t, GlobalId_t, Node_t>::baseCheckBeforeOrAfterTra
       throw std::runtime_error( msg.str() );
     }
   }
+
+  std::cout << "Aqui 002" << std::endl;
 
   // *****************************************************************
   // Check the lhs multivector
