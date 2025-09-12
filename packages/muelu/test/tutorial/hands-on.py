@@ -90,7 +90,7 @@ class ProblemHandler():
   def __init__(self):
     self.problem    = "Laplace2D"
     self.solver     = "cg"
-    self.executable = "MueLu_TutorialDriver_xml_galeri.exe"
+    self.executable = "MueLu_TutorialDriver.exe"
     self.bcolors    = usecolors()
     self.meshx      = 50
     self.meshy      = 50
@@ -127,7 +127,7 @@ class ProblemHandler():
 
   def doLaplace2Dn(self):
     self.problem    = "Laplace2D"
-    self.executable = "MueLu_TutorialDriver_xml_galeri.exe"
+    self.executable = "MueLu_TutorialDriver.exe"
     self.solver     = "cg"
     self.meshx      = input("Mesh: Elements in x direction = ")
     self.meshy      = input("Mesh: Elements in y direction = ")
@@ -135,7 +135,7 @@ class ProblemHandler():
 
   def doLaplace2D50(self):
     self.problem    = "Laplace2D"
-    self.executable = "MueLu_TutorialDriver_xml_galeri.exe"
+    self.executable = "MueLu_TutorialDriver.exe"
     self.solver     = "cg"
     self.meshx      = 50
     self.meshy      = 50
@@ -143,7 +143,7 @@ class ProblemHandler():
 
   def doRecirc2Dn(self):
     self.problem    = "Recirc2D"
-    self.executable = "MueLu_TutorialDriver_xml_galeri.exe"
+    self.executable = "MueLu_TutorialDriver.exe"
     self.solver     = "gmres"
     self.meshx      = input("Mesh: Elements in x direction = ")
     self.meshy      = input("Mesh: Elements in y direction = ")
@@ -151,7 +151,7 @@ class ProblemHandler():
 
   def doRecirc2D50(self):
     self.problem    = "Recirc2D"
-    self.executable = "MueLu_TutorialDriver_xml_galeri.exe"
+    self.executable = "MueLu_TutorialDriver.exe"
     self.solver     = "gmres"
     self.meshx      = 50
     self.meshy      = 50
@@ -217,7 +217,7 @@ class ProblemHandler():
     cmd = "rm *.vtp *.mat example*.txt output.log aggs*.txt nodes*.txt"
     runCommand(cmd)
     print("RUN EXAMPLE")
-    cmd = "mpirun -np " + str(self.numprocs) + " " + str(self.executable) + "--matrixType=" + str(self.problem) + " --nx=" + str(self.meshx) + " --ny=" + str(self.meshy) + " --mgridSweeps=" + str(self.mgsweeps) + " --xml=" + str(self.xmlFileName) + " | tee output.log 2>&1"
+    cmd = "mpirun -np " + str(self.numprocs) + " " + str(self.executable) + " --matrixType=" + str(self.problem) + " --nx=" + str(self.meshx) + " --ny=" + str(self.meshy) + " --mgridSweeps=" + str(self.mgsweeps) + " --xml=" + str(self.xmlFileName) + " | tee output.log 2>&1"
     print(cmd)
     runCommand(cmd)
     runCommand("echo 'Press q to return.' >> output.log")
@@ -387,7 +387,11 @@ class ProblemHandler():
     self.proc5.stdin.write("set ylabel \"Relative residual\"\n")
     self.proc5.stdin.write("set autoscale\n")
     self.proc5.stdin.write("set logscale y\n")
-    self.proc5.stdin.write("plot '< sed \"s/[{}]//g\" output.res' using 2:5 w linespoints title \"" + str(self.xmlFileName) + "\"\n")
+    #printcmd = "plot \"output.res\" using 2:(real(substr(strcol(5), 2, strlen(strcol(5)) w linespoints title \"" + str(self.xmlFileName) + "\"\n"
+    #self.proc5.stdin.write("unbrace(s) = real(substr(s,2,strlen(s)-2))\n")
+    #self.proc5.stdin.write("plot 'output.res' using 2:(unbrace(strcol(5))) with linespoints title '" + str(self.xmlFileName) + "'\n")
+    printcmd = "plot '< sed \"s/[{}]//g\" output.res' using 2:5 w linespoints title \"" + str(self.xmlFileName) + "\"\n"
+    self.proc5.stdin.write(printcmd)
     self.proc5.stdin.flush()
 
   def printMainMenu(self):
@@ -400,7 +404,7 @@ class ProblemHandler():
 
   def doExitProgram(self):
     print("CLEAN UP temporary data")
-    cmd = "rm *.vtp *.mat example*.txt output.log aggs*.txt nodes*.txt"
+    cmd = "rm *.vtp *.mat example*.txt output.log output.res aggs*.txt nodes*.txt"
     runCommand(cmd)
     print("QUIT")
     sys.exit()
