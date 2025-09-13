@@ -443,17 +443,17 @@ class MueLu_XMLChallengeMode():
   def main(self):
 
     # check if tar.gz file with data is in subfolder challenges:
-    if os.path.isfile("challenges/" + self.problem + ".tar.gz") == False:
-      cmd = "rm -Rf challenges"
-      runCommand(cmd)
-      print("Download additional files")
-      print(self.bcolors.WARNING+"https://trilinos.org/wordpress/wp-content/uploads/2015/07/MueLu_tutorial_challenges.tar.gz"+self.bcolors.ENDC)
-      cmd = "wget --no-check-certificate https://trilinos.org/wordpress/wp-content/uploads/2015/07/MueLu_tutorial_challenges.tar.gz"
-      runCommand(cmd)
-      print("Extract files...")
-      cmd = "tar xvf MueLu_tutorial_challenges.tar.gz"
-      runCommand(cmd)
-      print(self.bcolors.OKDARKGREEN + "Success!" + self.bcolors.ENDC)
+#    if os.path.isfile("challenges/" + self.problem + ".tar.gz") == False:
+#      cmd = "rm -Rf challenges"
+#      runCommand(cmd)
+#      print("Download additional files")
+#      print(self.bcolors.WARNING+"https://trilinos.org/wordpress/wp-content/uploads/2015/07/MueLu_tutorial_challenges.tar.gz"+self.bcolors.ENDC)
+#      cmd = "wget --no-check-certificate https://trilinos.org/wordpress/wp-content/uploads/2015/07/MueLu_tutorial_challenges.tar.gz"
+#      runCommand(cmd)
+#      print("Extract files...")
+#      cmd = "tar xvf MueLu_tutorial_challenges.tar.gz"
+#      runCommand(cmd)
+#      print(self.bcolors.OKDARKGREEN + "Success!" + self.bcolors.ENDC)
 
     # generate results for reference xml files
     self.xmlReferenceFileName = "challenges/" + self.problem + "_reference.xml"
@@ -551,7 +551,9 @@ class MueLu_XMLChallengeMode():
     cmd = "rm -f *.vtp *.mat example*.txt output.log output.res aggs*.txt nodes*.txt"
     runCommand(cmd)
     print("RUN EXAMPLE")
-    cmd = "mpirun -np " + str(self.numProcs) + " " + str(self.executable) + " --globalNumDofs=" + str(self.globalNumDofs) + " --nDofsPerNode=" + str(self.nDofsPerNode) + " --solver=" + str(self.solver) + " --tol=" + str(self.tol) + " --xml=" + self.xmlFileName + " --problem=challenges/" + str(self.problem) + " --coordinates=challenges/" + str(self.problem) + "_coords.txt" + " | tee output.log 2>&1"
+    #cmd = "mpirun -np " + str(self.numProcs) + " " + str(self.executable) + " --globalNumDofs=" + str(self.globalNumDofs) + " --nDofsPerNode=" + str(self.nDofsPerNode) + " --solver=" + str(self.solver) + " --tol=" + str(self.tol) + " --xml=" + self.xmlFileName + " --problem=challenges/" + str(self.problem) + " --coordinates=challenges/" + str(self.problem) + "_coords.txt" + " | tee output.log 2>&1"
+    cmd = "mpirun -np " + str(self.numProcs) + " " + str(self.executable) + " --matrixType=" + str(self.problem) + " --nx=" + str(self.meshx) + " --ny=" + str(self.meshy) + " --solver=" + str(self.solver) + " --tol=" + str(self.tol) + " --xml=" + self.xmlFileName + " | tee output.log 2>&1"
+    runCommand(cmd)
     print(cmd)
     runCommand(cmd)
     runCommand("echo 'Press q to return.' >> output.log")

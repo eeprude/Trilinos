@@ -8,6 +8,52 @@ ASSERT_DEFINED(
   ${PACKAGE_NAME}_ENABLE_Isorropia
   ${PACKAGE_NAME}_ENABLE_Tpetra
   )
+  
+set(XML_FILES_ALL
+  challenges/Elasticity2D_reference.xml
+  challenges/Elasticity2D_parameters.xml
+  challenges/Recirc2D_reference.xml
+  challenges/Recirc2D_parameters.xml
+  blocked_rebalancing.xml
+  ml_ParameterList.xml
+  ml_RebalancedParameterList.xml
+  muelu_ParameterList.xml
+  n1_easy.xml
+  n1_easy_pg.xml
+  n2_easy_agg.xml
+  n2_easy_agg2.xml
+  n2_easy_agg3.xml
+  n2_easy_export.xml
+  s1_easy.xml
+  s1_easy_3levels_smoothed.xml
+  s1_easy_3levels_unsmoothed.xml
+  s1_easy_exercise.xml
+  s1_easy_jacobi.xml
+  s1_easy_jacobi2.xml
+  s2a.xml
+  s2_adv_a.xml
+  s2_adv_b.xml
+  s2_adv_c.xml
+  s2b.xml
+  s2_easy.xml
+  s3a.xml
+  s3a_easy.xml
+  s3b.xml
+  s3b1.xml
+  s3b2.xml
+  s3b3.xml
+  s3b_easy.xml
+  s3c.xml
+  s3c_easy.xml
+  s4a.xml
+  s4av.xml
+  s4b.xml
+  s4c.xml
+  s5a.xml
+  s5b.xml
+  s6_dep.xml
+  s6_export.xml
+)
 
 TRIBITS_COPY_FILES_TO_BINARY_DIR(CopyXmlFiles
   SOURCE_FILES
@@ -96,6 +142,38 @@ IF (${PACKAGE_NAME}_ENABLE_Galeri)
     SOURCES laplace2d.cpp
     COMM serial mpi
     )
+    
+  set(XML_FILES_TEST ${XML_FILES_ALL})
+  list(REMOVE_ITEM XML_FILES_TEST
+    challenges/Elasticity2D_reference.xml
+    challenges/Elasticity2D_parameters.xml
+    challenges/Recirc2D_reference.xml
+    challenges/Recirc2D_parameters.xml
+    blocked_rebalancing.xml
+    ml_ParameterList.xml
+    ml_RebalancedParameterList.xml
+    muelu_ParameterList.xml
+    n2_easy_agg.xml
+    n2_easy_agg2.xml
+    n2_easy_agg3.xml
+    n2_easy_export.xml
+    s4av.xml
+    s4c.xml
+    s5a.xml
+    s5b.xml
+    # xmls never mentioned in the tutorial
+    n1_easy_pg.xml
+    s2_easy.xml
+    s2b.xml
+    s3a_easy.xml
+    s3b_easy.xml
+    s3c.xml
+    s3c_easy.xml
+  )
+    
+  foreach(xml_file IN LISTS XML_FILES_TEST)
+    # without directory and without extension
+    get_filename_component(xml_we "${xml_file}" NAME_WE)
 
   TRIBITS_ADD_TEST(
     Tutorial_laplace2d
@@ -104,6 +182,11 @@ IF (${PACKAGE_NAME}_ENABLE_Galeri)
     COMM serial mpi
     NUM_MPI_PROCS 2
     )
+  endforeach()
+  
+  # foreach() are split so that tests are ordered by matrix type
+  foreach(xml_file IN LISTS XML_FILES_TEST)
+    get_filename_component(xml_we "${xml_file}" NAME_WE)
 
   TRIBITS_ADD_TEST(
     Tutorial_laplace2d
@@ -112,6 +195,7 @@ IF (${PACKAGE_NAME}_ENABLE_Galeri)
     COMM serial mpi
     NUM_MPI_PROCS 2
     )
+  endforeach()
 
 ENDIF()
 
