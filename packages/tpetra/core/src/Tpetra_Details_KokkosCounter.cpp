@@ -79,11 +79,7 @@ void kokkosp_begin_fence(const char *name, const uint32_t deviceId,
 
     // Figure out what count bin to stick this in
     int idx = (int)eid.type;
-#if KOKKOS_VERSION >= 40499
     if (eid.instance_id == int_for_synchronization_reason(SpecialSynchronizationCases::GlobalDeviceSynchronization))
-#else
-    if (eid.instance_id == Impl::int_for_synchronization_reason(SpecialSynchronizationCases::GlobalDeviceSynchronization))
-#endif
       count_global[idx]++;
     else
       count_instance[idx]++;
@@ -172,6 +168,7 @@ size_t FenceCounter::get_count_instance(const std::string &device) {
   TEUCHOS_TEST_FOR_EXCEPTION(1, std::runtime_error, std::string("Error: ") + device + std::string(" is not a device known to Tpetra"));
 }
 
+// clang-format on
 namespace KokkosRegionCounterDetails {
 std::vector<std::string> regions;
 
@@ -217,5 +214,8 @@ void KokkosRegionCounter::dump_regions(std::ostream &os) {
   }
 }
 
-}  // namespace Details
-}  // namespace Tpetra
+// clang-format off
+
+
+} // namespace Details
+} // namespace Tpetra
