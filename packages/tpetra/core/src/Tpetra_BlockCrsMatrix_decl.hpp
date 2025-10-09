@@ -918,9 +918,9 @@ class BlockCrsMatrix : virtual public ::Tpetra::RowMatrix<Scalar, LO, GO, Node>,
   // //! Clear the local error state and stream.
   // void clearLocalErrorStateAndStream ();
 
-public:
-    typename impl_scalar_type_dualview::t_host::const_type
-    getValuesHost() const;
+ public:
+  typename impl_scalar_type_dualview::t_host::const_type
+  getValuesHost() const;
 
   typename impl_scalar_type_dualview::t_dev::const_type
   getValuesDevice() const;

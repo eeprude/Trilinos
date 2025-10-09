@@ -168,7 +168,6 @@ size_t FenceCounter::get_count_instance(const std::string &device) {
   TEUCHOS_TEST_FOR_EXCEPTION(1, std::runtime_error, std::string("Error: ") + device + std::string(" is not a device known to Tpetra"));
 }
 
-// clang-format on
 namespace KokkosRegionCounterDetails {
 std::vector<std::string> regions;
 
@@ -214,8 +213,5 @@ void KokkosRegionCounter::dump_regions(std::ostream &os) {
   }
 }
 
-// clang-format off
-
-
-} // namespace Details
-} // namespace Tpetra
+}  // namespace Details
+}  // namespace Tpetra
