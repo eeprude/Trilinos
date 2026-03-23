@@ -66,18 +66,11 @@ class LocalQRDecompFunctor {
   typedef SCType SC;
 
   typedef typename DeviceType::execution_space execution_space;
-#if KOKKOS_VERSION >= 40799
   typedef typename KokkosKernels::ArithTraits<SC>::val_type impl_SC;
-#else
-  typedef typename Kokkos::ArithTraits<SC>::val_type impl_SC;
-#endif
-#if KOKKOS_VERSION >= 40799
   typedef KokkosKernels::ArithTraits<impl_SC> impl_ATS;
-#else
-  typedef Kokkos::ArithTraits<impl_SC> impl_ATS;
-#endif
   typedef typename impl_ATS::magnitudeType Magnitude;
 
+ public:
   typedef Kokkos::View<impl_SC**, typename execution_space::scratch_memory_space, Kokkos::MemoryUnmanaged> shared_matrix;
   typedef Kokkos::View<impl_SC*, typename execution_space::scratch_memory_space, Kokkos::MemoryUnmanaged> shared_vector;
 
@@ -333,17 +326,6 @@ class LocalQRDecompFunctor {
         coarseNS(offset + j, j) = one;
     }
   }
-
-  // amount of shared memory
-  size_t team_shmem_size(int /* team_size */) const {
-    if (doQRStep) {
-      int m = maxAggDofSize;
-      int n = fineNS.extent(1);
-      return shared_matrix::shmem_size(m, n) +  // r
-             shared_matrix::shmem_size(m, m);   // q
-    } else
-      return 0;
-  }
 };
 
 }  // namespace
@@ -448,7 +430,7 @@ void TentativePFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP
       AmalgamationFactory<SC, LO, GO, NO>::AmalgamateMap(rcp_dynamic_cast<const StridedMap>(coarseMap), coarseCoordMap);
     }
 
-    coarseCoords = RealValuedMultiVectorFactory::Build(coarseCoordMap, fineCoords->getNumVectors());
+    coarseCoords = RealValuedMultiVectorFactory::Build(coarseCoordMap, fineCoords->getNumVectors(), false);
 
     // Create overlapped fine coordinates to reduce global communication
     auto uniqueMap                           = fineCoords->getMap();
@@ -457,7 +439,7 @@ void TentativePFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP
       auto nonUniqueMap = aggregates->GetMap();
       auto importer     = ImportFactory::Build(uniqueMap, nonUniqueMap);
 
-      ghostedCoords = RealValuedMultiVectorFactory::Build(nonUniqueMap, fineCoords->getNumVectors());
+      ghostedCoords = RealValuedMultiVectorFactory::Build(nonUniqueMap, fineCoords->getNumVectors(), false);
       ghostedCoords->doImport(*fineCoords, *importer, Xpetra::INSERT);
     }
 
@@ -550,17 +532,9 @@ void TentativePFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   const size_t numRows = rowMap->getLocalNumElements();
   const size_t NSDim   = fineNullspace->getNumVectors();
 
-#if KOKKOS_VERSION >= 40799
   typedef KokkosKernels::ArithTraits<SC> ATS;
-#else
-  typedef Kokkos::ArithTraits<SC> ATS;
-#endif
-  using impl_SC = typename ATS::val_type;
-#if KOKKOS_VERSION >= 40799
-  using impl_ATS = KokkosKernels::ArithTraits<impl_SC>;
-#else
-  using impl_ATS = Kokkos::ArithTraits<impl_SC>;
-#endif
+  using impl_SC      = typename ATS::val_type;
+  using impl_ATS     = KokkosKernels::ArithTraits<impl_SC>;
   const impl_SC zero = impl_ATS::zero(), one = impl_ATS::one();
 
   const LO INVALID = Teuchos::OrdinalTraits<LO>::invalid();
@@ -693,11 +667,11 @@ void TentativePFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 
   // STEP 2: prepare local QR decomposition
   // Reserve memory for tentative prolongation operator
-  coarseNullspace = MultiVectorFactory::Build(coarseMap, NSDim);
+  coarseNullspace = MultiVectorFactory::Build(coarseMap, NSDim, true);
 
   // Pull out the nullspace vectors so that we can have random access (on the device)
   auto fineNS   = fineNullspace->getLocalViewDevice(Tpetra::Access::ReadWrite);
-  auto coarseNS = coarseNullspace->getLocalViewDevice(Tpetra::Access::OverwriteAll);
+  auto coarseNS = coarseNullspace->getLocalViewDevice(Tpetra::Access::ReadWrite);
 
   size_t nnz = 0;  // actual number of nnz
 
@@ -859,13 +833,29 @@ void TentativePFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
       // Set up team policy with numAggregates teams and one thread per team.
       // Each team handles a slice of the data associated with one aggregate
       // and performs a local QR decomposition
-      const Kokkos::TeamPolicy<execution_space> policy(numAggregates, 1);  // numAggregates teams a 1 thread
+      Kokkos::TeamPolicy<execution_space> policy(numAggregates, 1);  // numAggregates teams a 1 thread
       LocalQRDecompFunctor<LocalOrdinal, GlobalOrdinal, Scalar, DeviceType, decltype(fineNSRandom),
                            decltype(aggDofSizes /*aggregate sizes in dofs*/), decltype(maxAggSize), decltype(agg2RowMapLO),
                            decltype(statusAtomic), decltype(rows), decltype(rowsAux), decltype(colsAux),
                            decltype(valsAux)>
           localQRFunctor(fineNSRandom, coarseNS, aggDofSizes, maxAggSize, agg2RowMapLO, statusAtomic,
                          rows, rowsAux, colsAux, valsAux, doQRStep);
+      if (doQRStep) {
+        using shared_matrix = typename decltype(localQRFunctor)::shared_matrix;
+        int m               = maxAggSize;
+        int n               = fineNSRandom.extent(1);
+        int size            = shared_matrix::shmem_size(m, n) +  // r
+                   shared_matrix::shmem_size(m, m);              // q
+
+        if (size < policy.scratch_size_max(/*level=*/(int)0))
+          policy.set_scratch_size(/*level=*/(int)0, Kokkos::PerTeam(size));
+        else if (size < policy.scratch_size_max(/*level=*/(int)1))
+          policy.set_scratch_size(/*level=*/(int)1, Kokkos::PerTeam(size));
+        else
+          throw Exceptions::RuntimeError("Neither L0 scratch memory (max size " + std::to_string(policy.scratch_size_max((int)0)) +
+                                         "), nor L1 scratch memory (max size " + std::to_string(policy.scratch_size_max((int)1)) +
+                                         ") is large enough for requested allocation of size " + std::to_string(size));
+      }
       Kokkos::parallel_reduce("MueLu:TentativePF:BuildUncoupled:main_qr_loop", policy, localQRFunctor, nnz);
     }
 
@@ -983,17 +973,9 @@ void TentativePFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   // typedef typename STS::magnitudeType Magnitude;
   const LO INVALID = Teuchos::OrdinalTraits<LO>::invalid();
 
-#if KOKKOS_VERSION >= 40799
   typedef KokkosKernels::ArithTraits<SC> ATS;
-#else
-  typedef Kokkos::ArithTraits<SC> ATS;
-#endif
-  using impl_SC = typename ATS::val_type;
-#if KOKKOS_VERSION >= 40799
-  using impl_ATS = KokkosKernels::ArithTraits<impl_SC>;
-#else
-  using impl_ATS = Kokkos::ArithTraits<impl_SC>;
-#endif
+  using impl_SC     = typename ATS::val_type;
+  using impl_ATS    = KokkosKernels::ArithTraits<impl_SC>;
   const impl_SC one = impl_ATS::one();
 
   //    const GO     numAggs   = aggregates->GetNumAggregates();
@@ -1110,11 +1092,11 @@ void TentativePFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 
   // STEP 2: prepare local QR decomposition
   // Reserve memory for tentative prolongation operator
-  coarseNullspace = MultiVectorFactory::Build(coarsePointMap, NSDim);
+  coarseNullspace = MultiVectorFactory::Build(coarsePointMap, NSDim, true);
 
   // Pull out the nullspace vectors so that we can have random access (on the device)
   auto fineNS   = fineNullspace->getLocalViewDevice(Tpetra::Access::ReadWrite);
-  auto coarseNS = coarseNullspace->getLocalViewDevice(Tpetra::Access::OverwriteAll);
+  auto coarseNS = coarseNullspace->getLocalViewDevice(Tpetra::Access::ReadWrite);
 
   typedef typename Xpetra::Matrix<SC, LO, GO, NO>::local_matrix_device_type local_matrix_type;
   typedef typename local_matrix_type::row_map_type::non_const_type rows_type;
