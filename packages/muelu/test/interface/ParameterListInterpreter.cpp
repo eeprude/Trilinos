@@ -191,6 +191,11 @@ int main_(Teuchos::CommandLineProcessor& clp, Xpetra::UnderlyingLib& lib, int ar
       else if (dirList[k] == prefix + "MLParameterListInterpreter/" || dirList[k] == prefix + "MLParameterListInterpreter2/")
         paramList.set("ML output", 666);
 
+#ifndef HAVE_MUELU_BELOS
+      if ((paramList.isParameter("multigrid algorithm") && paramList.get<std::string>("multigrid algorithm") == "emin"))
+        continue;
+#endif
+
       try {
         timer.start();
         Teuchos::RCP<HierarchyManager> mueluFactory;
@@ -318,8 +323,6 @@ int main_(Teuchos::CommandLineProcessor& clp, Xpetra::UnderlyingLib& lib, int ar
         // using different seed, and may have different algorithm from one
         // gcc version to another, or to another compiler (like clang)
         // This leads to us always failing this test.
-        // NOTE1 : Epetra, on the other hand, rolls out its out random number
-        // generator, which always produces same results
 
         // make sure complex tests pass
         run_sed("'s/relaxation: damping factor = (1,0)/relaxation: damping factor = 1/'", baseFile);
